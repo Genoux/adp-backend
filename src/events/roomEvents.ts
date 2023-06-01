@@ -1,4 +1,4 @@
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 export const handleRoomEvents = (socket: Socket) => {
   socket.on('joinRoom', (roomId) => {
@@ -15,4 +15,7 @@ export const handleRoomEvents = (socket: Socket) => {
   socket.on('sendMessage', (roomId, message) => {
     socket.to(roomId).emit('message', `User ${socket.id}: ${message}`);
   });
+
+  // Emit a message to the room when a user connects
+  socket.emit('message', 'A new user has connected to the room');
 };
