@@ -12,7 +12,6 @@ export const startServer = () => {
   const io = new Server(server);
 
   io.on('connection', (socket: Socket) => {
-    console.log(`New connection: ${socket.id}`);
     handleRoomEvents(socket);
   });
 
