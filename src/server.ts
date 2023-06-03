@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { handleRoomEvents } from './events/roomEvents';
+import { handleUserEvents } from './events/userEvents';
 import cors from 'cors';
 
 export const startServer = () => {
@@ -24,6 +25,7 @@ export const startServer = () => {
 
   io.on('connection', (socket: Socket) => {
     handleRoomEvents(socket);
+    handleUserEvents(socket);
   });
 
   server.listen(4000, () => console.log('Listening on port 4000')); // Server is listening on port 4000

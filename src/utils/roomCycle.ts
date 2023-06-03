@@ -1,40 +1,83 @@
 import supabase from "../supabase";
 
-async function updateRoomCycle(roomId: string): Promise<number | undefined> {
-  // Fetch the current cycle value from the database
-  const { data: room, error } = await supabase
-    .from('rooms')
-    .select('cycle')
-    .eq('id', roomId)
-    .single();
+export async function updateRoomCycle(roomId: string) {
+  const { data: room, error: fetchError } = await supabase
+  .from("rooms")
+  .select("cycle")
+  .eq("id", roomId)
+  .single();
 
-  if (error) {
-    console.error('Error fetching room:', error);
-    return;
-  }
-
-  if (!room) {
-    console.error('No room found with id:', roomId);
-    return;
+  if (fetchError || !room) {
+  console.error('Error fetching room:', fetchError);
+  return
   }
 
   const currentCycle = room.cycle;
+  const newCycle = currentCycle + 1;
 
-  // Calculate the new cycle value
-  const newCycle = (currentCycle + 1) % 8;
-
-  // Update the cycle value in your database.
   const { error: updateError } = await supabase
-    .from('rooms')
-    .update({ cycle: newCycle })
-    .eq('id', roomId);
+  .from('rooms')
+  .update({ cycle: newCycle })
+  .eq('id', roomId);
 
   if (updateError) {
-    console.error('Error updating room:', updateError);
+  console.error('Error updating room:', updateError);
+  return;
+  }
+  
+  return { currentCycle, newCycle };
+}
+
+export async function switchTurnAndUpdateCycle(roomId: string) {
+
+  const roomCycle = await updateRoomCycle(roomId);
+
+  if (!roomCycle) {
+    console.error("Room cycle not available");
     return;
   }
 
-  return newCycle;
+  const { currentCycle, newCycle } = roomCycle;
+  console.log("switchTurnAndUpdateCycle - currentCycle:", currentCycle);
+
+  const { data: teams } = await supabase
+  .from("teams")
+  .select("*, room(id, cycle, status)")
+  .eq("room", roomId);
+
+  if (!teams || teams.length === 0) {
+    return 'No teams found';
+  }
+
+  const value = shouldSwitchTurn(currentCycle);
+    if (!value) {
+      return 'continue same team turn';
+    } else if (value === 'done') {
+      return 'done';
+    }
+ 
+  const updatePromises = teams.map((team: any) => 
+    supabase
+      .from("teams")
+      .update({ isTurn: !team.isTurn })
+      .eq("id", team.id)
+  );
+
+  await Promise.all(updatePromises);
+
+  
 }
 
-export { updateRoomCycle };
+function shouldSwitchTurn(cycle: number) {
+  // Calculate the position within the cycle
+  const position = cycle;
+
+  // Determine if it's time to switch turns based on the position
+  if (cycle === 1 || cycle === 3 || cycle === 5 || cycle === 7 || cycle === 9) {
+    return true; // Switch turns
+  } else if (cycle === 10) {
+    return 'done'; // All rounds completed
+  } else {
+    return false; // Continue with the same team's turn
+  }
+}
