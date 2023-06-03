@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import { updateRoomCycle } from '../utils/roomCycle';
 
 export const handleRoomEvents = (socket: Socket) => {
   socket.on('joinRoom', (roomid, teamid) => {
@@ -18,6 +19,10 @@ export const handleRoomEvents = (socket: Socket) => {
 
   socket.on('sendMessage', (roomid, message) => {
     socket.to(roomid).emit('message', `User ${socket.id}: ${message}`);
+  });
+
+  socket.on('updateRoomCycle', (roomid) => {
+    updateRoomCycle(roomid);
   });
 
   // Emit a message to the room when a user connects

@@ -6,14 +6,25 @@ import cors from 'cors';
 
 export const startServer = () => {
   const app = express();
-  app.use(cors()); // Enable CORS
+  
+  app.use(cors({
+    origin: "http://localhost:3000", // this should be your client's origin
+    credentials: true,
+  })); 
 
   const server = createServer(app);
-  const io = new Server(server);
+  
+  const io = new Server(server, {
+    cors: {
+      origin: "http://localhost:3000", // this should be your client's origin
+      methods: ["GET", "POST"],
+      credentials: true
+    }
+  });
 
   io.on('connection', (socket: Socket) => {
     handleRoomEvents(socket);
   });
 
-  server.listen(3000, () => console.log('Listening on port 3000'));
+  server.listen(4000, () => console.log('Listening on port 4000')); // Server is listening on port 4000
 };
