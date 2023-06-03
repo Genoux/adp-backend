@@ -1,4 +1,5 @@
 import supabase from "../supabase";
+import { resetTimer } from "./timer";
 
 export async function updateRoomCycle(roomId: string) {
   const { data: room, error: fetchError } = await supabase
@@ -37,8 +38,7 @@ export async function switchTurnAndUpdateCycle(roomId: string) {
     return;
   }
 
-  const { currentCycle, newCycle } = roomCycle;
-  console.log("switchTurnAndUpdateCycle - currentCycle:", currentCycle);
+  const { currentCycle } = roomCycle;
 
   const { data: teams } = await supabase
   .from("teams")
@@ -48,6 +48,8 @@ export async function switchTurnAndUpdateCycle(roomId: string) {
   if (!teams || teams.length === 0) {
     return 'No teams found';
   }
+
+  resetTimer(roomId);
 
   const value = shouldSwitchTurn(currentCycle);
     if (!value) {
@@ -69,9 +71,7 @@ export async function switchTurnAndUpdateCycle(roomId: string) {
 }
 
 function shouldSwitchTurn(cycle: number) {
-  // Calculate the position within the cycle
-  const position = cycle;
-
+  console.log("shouldSwitchTurn - cycle:", cycle);
   // Determine if it's time to switch turns based on the position
   if (cycle === 1 || cycle === 3 || cycle === 5 || cycle === 7 || cycle === 9) {
     return true; // Switch turns

@@ -1,8 +1,6 @@
 import supabase from "../supabase";
 
-export async function selectUserChampion(roomid: string, selectedChampion: string) {
-  if (!selectedChampion) return;
-  
+export async function selectUserChampion(roomid: string, selectedChampion: string | null) {
     const { data: team } = await supabase
       .from("teams")
       .select("id, heroes_pool, number_of_pick, heroes_selected")

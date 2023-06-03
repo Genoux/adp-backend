@@ -24,8 +24,8 @@ export const startServer = () => {
   });
 
   io.on('connection', (socket: Socket) => {
-    handleRoomEvents(socket);
-    handleUserEvents(socket);
+    handleRoomEvents(socket, io);
+    handleUserEvents(socket, io);
   });
 
   server.listen(4000, () => console.log('Listening on port 4000')); // Server is listening on port 4000
