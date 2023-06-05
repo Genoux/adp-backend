@@ -16,6 +16,9 @@ export function initTimer(roomid: string, io: Server) {
 
   timer.addEventListener('secondsUpdated', async function () { 
     io.in(roomid).emit('TIMER', timer.getTimeValues().toString());
+    if (!roomTimers[roomid]) {
+      deleteTimer(roomid)
+    }
   });
 
   timer.addEventListener('targetAchieved', async function (e: any) {
@@ -34,6 +37,12 @@ export function initTimer(roomid: string, io: Server) {
 
   roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 12 } });
 
+}
+
+function deleteTimer(roomid: string) {
+  roomTimers[roomid].countdownTimer.stop();
+  delete roomTimers[roomid];
+  console.log("deleteTimer - roomTimers:", roomTimers);
 }
 
 

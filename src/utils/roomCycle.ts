@@ -4,10 +4,11 @@ import { resetTimer } from "./timer";
 export async function updateRoomCycle(roomId: string) {
   const { data: room, error: fetchError } = await supabase
   .from("rooms")
-  .select("cycle")
+  .select("*")
   .eq("id", roomId)
   .single();
-
+  console.log("updateRoomCycle - room:", room?.id);
+  if(!room) return;
   if (fetchError || !room) {
   console.error('Error fetching room:', fetchError);
   return
