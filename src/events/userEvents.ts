@@ -33,7 +33,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
       updateRoomCycle(roomid);
       initTimer(roomid, io);
 
-      io.in(roomid).emit('ROOM_READY', 'Room is ready to start!');
+     // io.in(roomid).emit('ROOM_READY', 'Room is ready to start!');
       
     }
   });

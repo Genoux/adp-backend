@@ -2,9 +2,11 @@ import { Timer, } from "easytimer.js";
 import { Server } from 'socket.io';
 import { selectUserChampion } from "./champions";
 import { switchTurnAndUpdateCycle } from "./roomCycle";
+import supabase from "../supabase";
 
 interface RoomTimer {
   countdownTimer: any;
+  id: number | string;
 }
 
 const roomTimers: Record<string, RoomTimer> = {};
@@ -14,32 +16,33 @@ export function initTimer(roomid: string, io: Server) {
 
   const timer = new Timer();
 
-  timer.addEventListener('secondsUpdated', async function () { 
-    io.in(roomid).emit('TIMER', timer.getTimeValues().toString());
+  timer.addEventListener('secondsUpdated', async function (e: any) { 
+    console.log("roomid:", roomid);
+
+  io.to(roomid).emit('TIMER', timer.getTimeValues().toString());
     if (!roomTimers[roomid]) {
       deleteTimer(roomid)
     }
   });
 
   timer.addEventListener('targetAchieved', async function (e: any) {
-    console.log("targetAchieved - e:", e);
     setTimeout(async () => {
       await selectUserChampion(roomid, null);
       await switchTurnAndUpdateCycle(roomid);
     }, 500);
-    
   });
 
 
   roomTimers[roomid] = {
     countdownTimer: timer,
+    id: roomid
   };
 
+  console.log("initTimer - roomid:", roomid);
   roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 12 } });
-
 }
 
-function deleteTimer(roomid: string) {
+export function deleteTimer(roomid: string) {
   roomTimers[roomid].countdownTimer.stop();
   delete roomTimers[roomid];
   console.log("deleteTimer - roomTimers:", roomTimers);
