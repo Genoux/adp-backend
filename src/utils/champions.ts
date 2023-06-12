@@ -62,7 +62,7 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
       .from('teams')
       .update({ pick: false })
         .eq('id', team.id);
-  }, 1000);
+  }, 500);
   
   return false
 }
