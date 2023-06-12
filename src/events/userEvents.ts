@@ -9,11 +9,14 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     stopTimer(data.roomid);
     const { roomid, selectedChampion } = data;
     await selectUserChampion(roomid, selectedChampion);
-    await switchTurnAndUpdateCycle(roomid);
-    setTimeout(() => {
-      resetTimer(roomid);
-    }, 500);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
+    await switchTurnAndUpdateCycle(roomid);
+    resetTimer(roomid);
+  });
+
+  socket.on('STOP_TIMER', async (data) => {
+    console.log("Stop timer for: ", data);
+    stopTimer(data.roomid);
   });
 
   socket.on('TEAM_READY', async ({ roomid, teamid }) => {

@@ -40,20 +40,13 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
     
     await supabase
     .from('teams')
-    .update({ heroes_selected: heroes_selected })
-      .eq('id', team.id);
-    
-  //update team heroes pool where isTurn is false
-  await supabase
-    .from("teams")
-    .update({ heroes_pool: updatedHeroesPool })
-    .eq("room", roomid)
-    .neq("isTurn", true);
+    .update({ heroes_selected: heroes_selected, pick: false })
+    .eq('id', team.id);
 
-    // await Promise.all([
-    //   supabase
-    //     .from("teams")
-    //     .update({ heroes_pool: updatedHeroesPool })
-    //     .eq("room", roomid),
-    // ]);
+    await Promise.all([
+      supabase
+        .from("teams")
+        .update({ heroes_pool: updatedHeroesPool })
+        .eq("room", roomid),
+    ]);
 }
