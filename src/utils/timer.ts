@@ -38,7 +38,7 @@ export async function cleanUpRoomTimers() {
 function addTimerEventListeners(timer: Timer, roomid: string, io: Server, onTargetAchieved?: () => Promise<void>) {
   timer.addEventListener('secondsUpdated', () => {
     io.to(roomid).emit('TIMER', timer.getTimeValues().toString());
-
+    //console.log(timer.isPaused());
     if (!roomTimers[roomid]) {
       deleteTimer(roomid);
     }
@@ -62,10 +62,16 @@ export function initTimer(roomid: string, io: Server) {
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
+    if (timer.isPaused()) {
+      console.log('Timer is paused');
+      return;
+    }
     stopTimer(roomid);
     await selectUserChampion(roomid, null);
     await switchTurnAndUpdateCycle(roomid);
-    resetTimer(roomid);
+    setTimeout(() => {
+      resetTimer(roomid);
+    }, 500);
   });
 
   roomTimers[roomid] = {
