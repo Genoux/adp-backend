@@ -77,12 +77,12 @@ export function initTimer(roomid: string, io: Server) {
 
 export function startLobbyTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
-  roomTimers[roomid].countdownTimerLobby.start({ countdown: true, startValues: { seconds: 3 } });
+  roomTimers[roomid].countdownTimerLobby.start({ countdown: true, startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 } });
 }
 
 export function startTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
-  roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 1 } });
+  roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: Number(process.env.START_TIME) || 15 } });
 }
 
 export function deleteTimer(roomid: string) {
