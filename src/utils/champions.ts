@@ -3,14 +3,20 @@ import supabase from "../supabase";
 export async function selectUserChampion(roomid: string, selectedChampion: string | null) {
     const { data: team } = await supabase
       .from("teams")
-      .select("id, heroes_pool, number_of_pick, heroes_selected")
+      .select("id, heroes_pool, number_of_pick, heroes_selected, pick")
       .eq("room", roomid)
       .eq("isTurn", true)
       .single();
 
     if (!team) return;
 
-    const { heroes_pool, heroes_selected } = team;
+    const { heroes_pool, heroes_selected, pick } = team;
+    
+    if (pick) {
+      return true
+    }
+  
+  await supabase.from('teams').update({ pick: true }).eq('id', team.id);
 
     let hero;
     if (selectedChampion) {
@@ -40,8 +46,9 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
     
     await supabase
     .from('teams')
-    .update({ heroes_selected: heroes_selected, number_of_pick: team.number_of_pick - 1 })
-    .eq('id', team.id);
+    .update({ heroes_selected: heroes_selected })
+      .eq('id', team.id);
+
 
     await Promise.all([
       supabase
@@ -49,4 +56,13 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
         .update({ heroes_pool: updatedHeroesPool })
         .eq("room", roomid),
     ]);
+  
+    setTimeout(async () => {
+      await supabase
+      .from('teams')
+      .update({ pick: false })
+        .eq('id', team.id);
+  }, 1000);
+  
+  return false
 }

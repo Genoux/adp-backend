@@ -2,11 +2,12 @@ import { Server, Socket } from 'socket.io';
 import supabase from '../supabase';
 import { selectUserChampion } from '../utils/champions';
 import { switchTurnAndUpdateCycle, updateRoomCycle } from '../utils/roomCycle';
-import { resetTimer, startLobbyTimer } from '../utils/timer';
+import { resetTimer, startLobbyTimer, stopTimer } from '../utils/timer';
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   socket.on('SELECT_CHAMPION', async (data) => {
     const { roomid, selectedChampion } = data;
+    stopTimer(data.roomid);
     await selectUserChampion(roomid, selectedChampion);
     await switchTurnAndUpdateCycle(roomid);
     resetTimer(roomid);

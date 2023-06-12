@@ -62,7 +62,9 @@ export function initTimer(roomid: string, io: Server) {
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
-    await selectUserChampion(roomid, null);
+    const picked = await selectUserChampion(roomid, null);
+    console.log("addTimerEventListeners - picked:", picked);
+    if(picked) return;
     await switchTurnAndUpdateCycle(roomid);
     resetTimer(roomid);
   });
@@ -90,6 +92,11 @@ export function deleteTimer(roomid: string) {
     roomTimers[roomid].countdownTimer.stop();
     delete roomTimers[roomid];
   }
+}
+
+export function stopTimer(roomid: string) {
+  if (!roomTimers[roomid]) return;
+  roomTimers[roomid].countdownTimer.stop();
 }
 
 export function resetTimer(roomid: string) {
