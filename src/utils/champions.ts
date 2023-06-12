@@ -3,18 +3,14 @@ import supabase from "../supabase";
 export async function selectUserChampion(roomid: string, selectedChampion: string | null) {
     const { data: team } = await supabase
       .from("teams")
-      .select("id, heroes_pool, number_of_pick, heroes_selected, pick")
+      .select("id, heroes_pool, number_of_pick, heroes_selected")
       .eq("room", roomid)
       .eq("isTurn", true)
       .single();
 
     if (!team) return;
 
-    const { heroes_pool, heroes_selected, pick } = team;
-    
-    if (pick) {
-      return true
-    }
+    const { heroes_pool, heroes_selected } = team;
   
   await supabase.from('teams').update({ pick: true }).eq('id', team.id);
 
@@ -53,7 +49,7 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
     await Promise.all([
       supabase
         .from("teams")
-        .update({ heroes_pool: updatedHeroesPool, pick: false })
+        .update({ heroes_pool: updatedHeroesPool })
         .eq("room", roomid),
     ]);
   
