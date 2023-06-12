@@ -63,9 +63,7 @@ export function initTimer(roomid: string, io: Server) {
 
   addTimerEventListeners(timer, roomid, io, async () => {
     stopTimer(roomid);
-    const picked = await selectUserChampion(roomid, null);
-    console.log("addTimerEventListeners - picked:", picked);
-    if(picked) return;
+    await selectUserChampion(roomid, null);
     await switchTurnAndUpdateCycle(roomid);
     resetTimer(roomid);
   });
