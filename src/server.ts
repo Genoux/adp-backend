@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
-import { handleRoomEvents, } from './events/roomEvents';
+import { handleRoomEvents } from './events/roomEvents';
 import { handleUserEvents } from './events/userEvents';
 import { cleanUpRoomTimers } from './utils/timer';
 import cors from 'cors';
@@ -29,9 +29,13 @@ export const startServer = () => {
     handleUserEvents(socket, io);
   });
 
-  server.listen(4000, async() => {
+  // Handle the root route
+  app.get('/', (req, res) => {
+    res.sendStatus(200);  // Send a 200 status code (OK)
+  });
 
-    await cleanUpRoomTimers()
-    console.log('Listening on port 4000')
-  }); // Server is listening on port 4000
+  server.listen(4000, async() => {
+    await cleanUpRoomTimers();
+    console.log('Listening on port 4000');
+  });
 };
