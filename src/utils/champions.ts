@@ -53,16 +53,9 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
     await Promise.all([
       supabase
         .from("teams")
-        .update({ heroes_pool: updatedHeroesPool })
+        .update({ heroes_pool: updatedHeroesPool, pick: false })
         .eq("room", roomid),
     ]);
-  
-    setTimeout(async () => {
-      await supabase
-      .from('teams')
-      .update({ pick: false })
-        .eq('id', team.id);
-  }, 500);
   
   return false
 }
