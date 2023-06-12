@@ -10,7 +10,7 @@ export const startServer = () => {
   const app = express();
   
   app.use(cors({
-    origin: "http://localhost:3000", // this should be your client's origin
+    origin: process.env.SOCKET_CLIENT_URL, // this should be your client's origin
     credentials: true,
   })); 
 
@@ -18,7 +18,7 @@ export const startServer = () => {
   
   const io = new Server(server, {
     cors: {
-      origin: "http://localhost:3000", // this should be your client's origin
+      origin: process.env.SOCKET_CLIENT_URL, // this should be your client's origin
       methods: ["GET", "POST"],
       credentials: true
     }
@@ -34,8 +34,8 @@ export const startServer = () => {
     res.sendStatus(200);  // Send a 200 status code (OK)
   });
 
-  server.listen(4000, async() => {
+  server.listen(process.env.PORT || 4000, async() => {
     await cleanUpRoomTimers();
-    console.log('Listening on port 4000');
+    console.log(`Listening on port ${process.env.PORT || 4000}`);
   });
 };
