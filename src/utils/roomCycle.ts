@@ -49,7 +49,7 @@ export async function switchTurnAndUpdateCycle(roomId: string) {
     return 'No teams found';
   }
 
-  resetTimer(roomId);
+  //resetTimer(roomId);
 
   const value = shouldSwitchTurn(currentCycle);
 
@@ -62,6 +62,8 @@ export async function switchTurnAndUpdateCycle(roomId: string) {
       .from('rooms')
       .update({ status: 'done' })
       .eq('id', roomId);
+    
+    await supabase.from('teams').update({ isTurn: false }).eq('room', roomId);
     
     return 'done';
   }

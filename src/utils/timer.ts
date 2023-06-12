@@ -1,83 +1,98 @@
-import { Timer, } from "easytimer.js";
+import { Timer } from "easytimer.js";
 import { Server } from 'socket.io';
 import { selectUserChampion } from "./champions";
 import { switchTurnAndUpdateCycle } from "./roomCycle";
 import supabase from "../supabase";
 
 interface RoomTimer {
-  countdownTimer: any;
+  countdownTimer: Timer;
+  countdownTimerLobby: Timer;
   id: number | string;
+  selecteChampion: boolean;
 }
 
 const roomTimers: Record<string, RoomTimer> = {};
 
-// Create a functon that list all the current timers
+// List all the current timers
 export function listTimers() {
   return roomTimers;
 }
 
+// Cleanup room timers
 export async function cleanUpRoomTimers() {
   const { data: rooms } = await supabase.from('rooms').select('id');
-  if(!rooms) return;
-  // Create a Set of all valid room IDs for efficient lookup
+  if (!rooms) return;
+
   const validRoomIds = new Set(rooms.map(room => room.id));
 
-  // Check each room timer
   for (const roomId in roomTimers) {
-    // If the room ID is not in the set of valid IDs, delete it
     if (!validRoomIds.has(roomId)) {
-      console.log(`Deleting timer for room ${roomId}`)
-      deleteTimer(roomId);  // deleteTimer is your existing function to stop and delete a timer
+      console.log(`Deleting timer for room ${roomId}`);
+      deleteTimer(roomId);
     }
   }
-  console.log(roomTimers)
+  console.log(roomTimers);
 }
 
-
-export function initTimer(roomid: string, io: Server) {
-  // If a timer for the room already exists, we simply return
-  if (roomTimers[roomid]) return;
-
-  const timer = new Timer();
-
-  // Emit a TIMER event every second with the updated timer values
-  timer.addEventListener('secondsUpdated', async function () { 
+// Common event listener for timers
+function addTimerEventListeners(timer: Timer, roomid: string, io: Server, onTargetAchieved?: () => Promise<void>) {
+  timer.addEventListener('secondsUpdated', () => {
     io.to(roomid).emit('TIMER', timer.getTimeValues().toString());
-    // If the timer was deleted while it was running, stop it
+
     if (!roomTimers[roomid]) {
       deleteTimer(roomid);
     }
   });
 
-  // When the timer finishes, select the user champion and update the cycle
-  timer.addEventListener('targetAchieved', async function () {
-    await selectUserChampion(roomid, null);
+  if (onTargetAchieved) {
+    timer.addEventListener('targetAchieved', onTargetAchieved);
+  }
+}
+
+// Initialize timer
+export function initTimer(roomid: string, io: Server) {
+  if (roomTimers[roomid]) return;
+
+  const timer = new Timer();
+  const timerLobby = new Timer();
+
+  addTimerEventListeners(timerLobby, roomid, io, async () => {
+    startTimer(roomid);
     await switchTurnAndUpdateCycle(roomid);
   });
 
-  // Start the timer with a countdown of 12 seconds
+  addTimerEventListeners(timer, roomid, io, async () => {
+    await selectUserChampion(roomid, null);
+    await switchTurnAndUpdateCycle(roomid);
+    resetTimer(roomid);
+  });
 
-  // Store the timer and room ID
   roomTimers[roomid] = {
     countdownTimer: timer,
-    id: roomid
+    countdownTimerLobby: timerLobby,
+    id: roomid,
+    selecteChampion: false
   };
+}
 
-  //roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 12 } });
+export function startLobbyTimer(roomid: string) {
+  if (!roomTimers[roomid]) return;
+  roomTimers[roomid].countdownTimerLobby.start({ countdown: true, startValues: { seconds: 3 } });
 }
 
 export function startTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
-  roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 5 } });
+  roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 1 } });
 }
 
 export function deleteTimer(roomid: string) {
-  roomTimers[roomid].countdownTimer.stop();
-  delete roomTimers[roomid];
+  if (roomTimers[roomid]?.countdownTimer) {
+    roomTimers[roomid].countdownTimer.stop();
+    delete roomTimers[roomid];
+  }
 }
-
 
 export function resetTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
-  roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: 2 } });
+  roomTimers[roomid].countdownTimer.reset();
 }
