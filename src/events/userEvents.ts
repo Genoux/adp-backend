@@ -10,7 +10,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     const { roomid, selectedChampion } = data;
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
-    await switchTurnAndUpdateCycle(roomid);
+    //await switchTurnAndUpdateCycle(roomid);
     resetTimer(roomid);
   });
 
