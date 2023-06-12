@@ -64,9 +64,10 @@ export function initTimer(roomid: string, io: Server) {
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
-    const { data: pick } = await supabase.from('teams').select('pick').eq('room', roomid).eq('isTurn', true).single()
-    if (pick) {
-      console.log(`Pick ${pick}`);
+    const { data } = await supabase.from('teams').select('pick').eq('room', roomid).eq('isTurn', true).single()
+    if (!data) return;
+    if (data.pick) {
+      console.log(`Pick ${data.pick}`);
       return
     }
     stopTimer(roomid);
