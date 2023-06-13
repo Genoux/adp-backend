@@ -16,8 +16,9 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     console.log("socket.on - value:", value);
     if (!value) {
       socket.emit('CHAMPION_SELECTED', true);
-      }
+    }
     resetTimer(roomid);
+    socket.to(roomid).emit('TIMER_RESET', true);
   });
 
   socket.on('RESET_TIMER', async (data) => {
