@@ -64,16 +64,17 @@ export function initTimer(roomid: string, io: Server) {
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
-    const { data } = await supabase.from('teams').select('pick').eq('room', roomid).eq('isTurn', true).single()
-    if (!data) return;
-    if (data.pick) {
-      console.log(`Pick ${data.pick}`);
-      return
-    }
-    stopTimer(roomid);
-    await selectUserChampion(roomid, null);
-    await switchTurnAndUpdateCycle(roomid);
-    resetTimer(roomid);
+    return;
+    // const { data } = await supabase.from('teams').select('pick').eq('room', roomid).eq('isTurn', true).single()
+    // if (!data) return;
+    // if (data.pick) {
+    //   console.log(`Pick ${data.pick}`);
+    //   return
+    // }
+    // stopTimer(roomid);
+    // await selectUserChampion(roomid, null);
+    // await switchTurnAndUpdateCycle(roomid);
+    // resetTimer(roomid);
   });
 
   roomTimers[roomid] = {
