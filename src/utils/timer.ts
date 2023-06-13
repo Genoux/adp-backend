@@ -1,7 +1,7 @@
 import { Timer } from "easytimer.js";
 import { Server } from 'socket.io';
 import { selectUserChampion } from "./champions";
-import { switchTurnAndUpdateCycle } from "./roomCycle";
+//import { switchTurnAndUpdateCycle } from "./roomCycle";
 import supabase from "../supabase";
 
 interface RoomTimer {
@@ -60,7 +60,7 @@ export function initTimer(roomid: string, io: Server) {
 
   addTimerEventListeners(timerLobby, roomid, io, async () => {
     startTimer(roomid);
-    await switchTurnAndUpdateCycle(roomid);
+    //await switchTurnAndUpdateCycle(roomid);
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
