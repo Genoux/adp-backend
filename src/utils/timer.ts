@@ -1,14 +1,15 @@
 import { Timer } from "easytimer.js";
 import { Server } from 'socket.io';
 import { selectUserChampion } from "./champions";
-//import { switchTurnAndUpdateCycle } from "./roomCycle";
+import { updateRoomCycle } from "./roomCycle";
+import { switchTurn } from "./switchTeam";
 import supabase from "../supabase";
 
 interface RoomTimer {
   countdownTimer: Timer;
   countdownTimerLobby: Timer;
   id: number | string;
-  selecteChampion: boolean;
+  heroSelected: boolean;
 }
 
 const roomTimers: Record<string, RoomTimer> = {};
@@ -16,6 +17,13 @@ const roomTimers: Record<string, RoomTimer> = {};
 // List all the current timers
 export function listTimers() {
   return roomTimers;
+}
+
+export async function setHeroSelected(roomid: string, selected: boolean) {
+  if (!roomTimers[roomid]) return
+    console.log("setHeroSelected - roomTimers[roomid]:", roomTimers[roomid].heroSelected);
+    roomTimers[roomid].heroSelected = selected;
+  
 }
 
 // Cleanup room timers
@@ -45,7 +53,9 @@ function addTimerEventListeners(timer: Timer, roomid: string, io: Server, onTarg
   });
 
   if (onTargetAchieved) {
-    timer.addEventListener('targetAchieved', onTargetAchieved);
+    timer.addEventListener('targetAchieved', () => {
+      setTimeout(onTargetAchieved, 1000); // Add a 3-second buffer
+    });
   }
 
 }
@@ -60,28 +70,24 @@ export function initTimer(roomid: string, io: Server) {
 
   addTimerEventListeners(timerLobby, roomid, io, async () => {
     startTimer(roomid);
-    //await switchTurnAndUpdateCycle(roomid);
+    await updateRoomCycle(roomid);
   });
 
   addTimerEventListeners(timer, roomid, io, async () => {
-    return;
-    // const { data } = await supabase.from('teams').select('pick').eq('room', roomid).eq('isTurn', true).single()
-    // if (!data) return;
-    // if (data.pick) {
-    //   console.log(`Pick ${data.pick}`);
-    //   return
-    // }
-    // stopTimer(roomid);
-    // await selectUserChampion(roomid, null);
-    // await switchTurnAndUpdateCycle(roomid);
-    // resetTimer(roomid);
+    if (!roomTimers[roomid].heroSelected) {
+      stopTimer(roomid);
+      await selectUserChampion(roomid, null);
+      const cycle = await updateRoomCycle(roomid);
+      await switchTurn(roomid, cycle);
+      resetTimer(roomid);
+    }
   });
 
   roomTimers[roomid] = {
     countdownTimer: timer,
     countdownTimerLobby: timerLobby,
     id: roomid,
-    selecteChampion: false
+    heroSelected: false // Initialize to false
   };
 }
 
@@ -92,6 +98,7 @@ export function startLobbyTimer(roomid: string) {
 
 export function startTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
+  roomTimers[roomid].heroSelected = false;
   roomTimers[roomid].countdownTimer.start({ countdown: true, startValues: { seconds: Number(process.env.START_TIME) || 15 } });
 }
 
@@ -109,5 +116,6 @@ export function stopTimer(roomid: string) {
 
 export function resetTimer(roomid: string) {
   if (!roomTimers[roomid]) return;
+  roomTimers[roomid].heroSelected = false;
   roomTimers[roomid].countdownTimer.reset();
 }
