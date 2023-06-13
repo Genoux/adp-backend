@@ -21,7 +21,7 @@ export async function switchTurn(roomId: string, roomCycle: number) {
   const value = shouldSwitchTurn(roomCycle);
 
   if (!value) {
-    return;
+    return false;
   } else if (value === 'done') {
     // set room status to done
     await supabase
@@ -42,6 +42,8 @@ export async function switchTurn(roomId: string, roomCycle: number) {
   );
 
   await Promise.all(updatePromises);
+
+  return true
 }
 
 function shouldSwitchTurn(cycle: number) {
