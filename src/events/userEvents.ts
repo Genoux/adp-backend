@@ -6,12 +6,14 @@ import { resetTimer, startLobbyTimer, stopTimer } from '../utils/timer';
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   socket.on('SELECT_CHAMPION', async (data) => {
-    stopTimer(data.roomid);
     const { roomid, selectedChampion } = data;
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
-    //await switchTurnAndUpdateCycle(roomid);
-    resetTimer(roomid);
+  });
+
+  socket.on('RESET_TIMER', async (data) => {
+    console.log("Stop timer for: ", data);
+    resetTimer(data.roomid);
   });
 
   socket.on('STOP_TIMER', async (data) => {
