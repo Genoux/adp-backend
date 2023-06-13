@@ -12,6 +12,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     await setHeroSelected(roomid, true);
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
+    socket.emit('CHAMPION_SELECTED', { selectedChampion });
     const cycle = await updateRoomCycle(roomid);
     await switchTurn(roomid, cycle);
     resetTimer(roomid);
