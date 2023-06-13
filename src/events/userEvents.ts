@@ -9,12 +9,14 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
   socket.on('SELECT_CHAMPION', async (data) => {
     const { roomid, selectedChampion } = data;
     //stopTimer(roomid);
-    await setHeroSelected(roomid, true);
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
     const cycle = await updateRoomCycle(roomid);
-    await switchTurn(roomid, cycle);
-    socket.emit('CHAMPION_SELECTED', true);
+    const value = await switchTurn(roomid, cycle);
+    console.log("socket.on - value:", value);
+    if (!value) {
+      socket.emit('CHAMPION_SELECTED', true);
+      }
     resetTimer(roomid);
   });
 

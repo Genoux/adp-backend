@@ -1,5 +1,5 @@
 import { Timer } from "easytimer.js";
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { selectUserChampion } from "./champions";
 import { updateRoomCycle } from "./roomCycle";
 import { switchTurn } from "./switchTeam";
@@ -21,7 +21,6 @@ export function listTimers() {
 
 export async function setHeroSelected(roomid: string, selected: boolean) {
   if (!roomTimers[roomid]) return
-    console.log("setHeroSelected - roomTimers[roomid]:", roomTimers[roomid].heroSelected);
     roomTimers[roomid].heroSelected = selected;
   
 }
@@ -62,7 +61,7 @@ function addTimerEventListeners(timer: Timer, roomid: string, io: Server, onTarg
 
 
 // Initialize timer
-export function initTimer(roomid: string, io: Server) {
+export function initTimer(roomid: string, io: Server, socket: Socket) {
   if (roomTimers[roomid]) return;
 
   const timer = new Timer();
@@ -79,6 +78,7 @@ export function initTimer(roomid: string, io: Server) {
       await selectUserChampion(roomid, null);
       const cycle = await updateRoomCycle(roomid);
       await switchTurn(roomid, cycle);
+      socket.emit('CHAMPION_SELECTED', true);
       resetTimer(roomid);
     }
   });
