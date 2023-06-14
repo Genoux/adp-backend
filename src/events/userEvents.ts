@@ -1,17 +1,30 @@
 import { Server, Socket } from 'socket.io';
 import supabase from '../supabase';
 import { selectUserChampion } from '../utils/champions';
-import { switchTurnAndUpdateCycle, updateRoomCycle } from '../utils/roomCycle';
-import { resetTimer, startLobbyTimer, stopTimer } from '../utils/timer';
+import { updateRoomCycle } from '../utils/roomCycle';
+import { switchTurn } from '../utils/switchTeam';
+import { resetTimer, startLobbyTimer, stopTimer, setHeroSelected } from '../utils/timer';
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   socket.on('SELECT_CHAMPION', async (data) => {
-    stopTimer(data.roomid);
     const { roomid, selectedChampion } = data;
+    //stopTimer(roomid);
+    await setHeroSelected(roomid, true);
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit('message', `User ${socket.id} has selected ${selectedChampion}`);
-    //await switchTurnAndUpdateCycle(roomid);
+    const cycle = await updateRoomCycle(roomid);
+    const value = await switchTurn(roomid, cycle);
+    console.log("socket.on - value:", value);
+    if (!value) {
+      socket.emit('CHAMPION_SELECTED', true);
+    }
     resetTimer(roomid);
+    socket.to(roomid).emit('TIMER_RESET', true);
+  });
+
+  socket.on('RESET_TIMER', async (data) => {
+    console.log("Stop timer for: ", data);
+    resetTimer(data.roomid);
   });
 
   socket.on('STOP_TIMER', async (data) => {
