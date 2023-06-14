@@ -26,64 +26,64 @@ export async function updateRoomCycle(roomId: string) {
     return;
   }
 
-  return { currentCycle, newCycle };
+  return currentCycle;
 }
 
-export async function switchTurnAndUpdateCycle(roomId: string) {
-  const roomCycle = await updateRoomCycle(roomId);
+// export async function switchTurnAndUpdateCycle(roomId: string) {
+//   const roomCycle = await updateRoomCycle(roomId);
 
-  if (!roomCycle) {
-    console.error("Room cycle not available");
-    return;
-  }
+//   if (!roomCycle) {
+//     console.error("Room cycle not available");
+//     return;
+//   }
 
-  const { currentCycle } = roomCycle;
+//   const { currentCycle } = roomCycle;
 
-  const { data: teams, error: teamFetchError } = await supabase
-  .from("teams")
-  .select("*, room(id, cycle, status)")
-  .eq("room", roomId);
+//   const { data: teams, error: teamFetchError } = await supabase
+//   .from("teams")
+//   .select("*, room(id, cycle, status)")
+//   .eq("room", roomId);
 
-  if (teamFetchError || !teams || teams.length === 0) {
-    console.error('Error fetching teams or no teams found:', teamFetchError);
-    return 'No teams found';
-  }
+//   if (teamFetchError || !teams || teams.length === 0) {
+//     console.error('Error fetching teams or no teams found:', teamFetchError);
+//     return 'No teams found';
+//   }
 
-  //resetTimer(roomId);
+//   //resetTimer(roomId);
 
-  const value = shouldSwitchTurn(currentCycle);
+//   const value = shouldSwitchTurn(currentCycle);
 
-  if (!value) {
-    return;
-  } else if (value === 'done') {
-    // set room status to done
-    deleteTimer(roomId);
-    await supabase
-      .from('rooms')
-      .update({ status: 'done' })
-      .eq('id', roomId);
+//   if (!value) {
+//     return;
+//   } else if (value === 'done') {
+//     // set room status to done
+//     deleteTimer(roomId);
+//     await supabase
+//       .from('rooms')
+//       .update({ status: 'done' })
+//       .eq('id', roomId);
     
-    await supabase.from('teams').update({ isTurn: false }).eq('room', roomId);
+//     await supabase.from('teams').update({ isTurn: false }).eq('room', roomId);
     
-    return 'done';
-  }
+//     return 'done';
+//   }
 
-  const updatePromises = teams.map((team: any) => 
-    supabase
-      .from("teams")
-      .update({ isTurn: !team.isTurn })
-      .eq("id", team.id)
-  );
+//   const updatePromises = teams.map((team: any) => 
+//     supabase
+//       .from("teams")
+//       .update({ isTurn: !team.isTurn })
+//       .eq("id", team.id)
+//   );
 
-  await Promise.all(updatePromises);
-}
+//   await Promise.all(updatePromises);
+// }
 
-function shouldSwitchTurn(cycle: number) {
-  if (cycle === 1 || cycle === 3 || cycle === 5 || cycle === 7 || cycle === 9) {
-    return true; // Switch turns
-  } else if (cycle >= 10) {
-    return 'done'; // All rounds completed
-  } else {
-    return false; // Continue with the same team's turn
-  }
-}
+// function shouldSwitchTurn(cycle: number) {
+//   if (cycle === 1 || cycle === 3 || cycle === 5 || cycle === 7 || cycle === 9) {
+//     return true; // Switch turns
+//   } else if (cycle >= 10) {
+//     return 'done'; // All rounds completed
+//   } else {
+//     return false; // Continue with the same team's turn
+//   }
+// }
