@@ -22,7 +22,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
       console.log('Cannot select champion, time is up.');
       return;
     }
-    //roomTimerManager.lockRoomTimer(roomid);
+    roomTimerManager.lockRoomTimer(roomid);
   
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit(
@@ -63,7 +63,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
       await supabase.from("rooms").update({ ready: true }).eq("id", roomid);
       console.log(`Room ${roomid} is ready!`);
       await updateRoomCycle(roomid);
-      //roomTimerManager.startLobbyTimer(roomid);
+      roomTimerManager.startLobbyTimer(roomid);
     }
   });
 };

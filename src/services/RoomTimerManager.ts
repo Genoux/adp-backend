@@ -132,6 +132,7 @@ private async getRoomStatus(roomid: string) {
     };
 
     this.addTimerEventListeners(timerLobby, roomid, io, async () => {
+      this.roomTimers[roomid].isTimeUp = false;
       this.startTimer(roomid);
       await updateRoomCycle(roomid);
     });
