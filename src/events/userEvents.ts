@@ -3,37 +3,50 @@ import supabase from "../supabase";
 import { selectUserChampion } from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
-import {
-  resetTimer,
-  startLobbyTimer,
-  stopTimer,
-  setHeroSelected,
-} from "../utils/timer";
+// import {
+//   resetTimer,
+//   startLobbyTimer,
+//   stopTimer,
+//   lockRoomTimer, unlockRoomTimer, cancelServerSelection
+// } from "../utils/timer";
+
+import { RoomTimerManager } from '../services/RoomTimerManager';
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
+  const roomTimerManager = RoomTimerManager.getInstance();
+
   socket.on("SELECT_CHAMPION", async ({ roomid, selectedChampion }) => {
-    await setHeroSelected(roomid, true);
+    //cancelServerSelection(roomid);
+
+    if (roomTimerManager.isTimeUp(roomid)) {
+      console.log('Cannot select champion, time is up.');
+      return;
+    }
+    roomTimerManager.lockRoomTimer(roomid);
+  
     await selectUserChampion(roomid, selectedChampion);
     io.to(roomid).emit(
       "message",
       `User ${socket.id} has selected ${selectedChampion}`
     );
+    
     const cycle = await updateRoomCycle(roomid);
     if (!await switchTurn(roomid, cycle)) {
       socket.emit("CHAMPION_SELECTED", true);
     }
-    resetTimer(roomid);
+  
+    roomTimerManager.resetTimer(roomid);
+    roomTimerManager.unlockRoomTimer(roomid);
+    
     socket.to(roomid).emit("TIMER_RESET", true);
   });
 
   socket.on("RESET_TIMER", ({ roomid }) => {
-    console.log("Reset timer for: ", roomid);
-    resetTimer(roomid);
+    roomTimerManager.resetTimer(roomid);
   });
 
   socket.on("STOP_TIMER", ({ roomid }) => {
-    console.log("Stop timer for: ", roomid);
-    stopTimer(roomid);
+    roomTimerManager.stopTimer(roomid);
   });
 
   socket.on("TEAM_READY", async ({ roomid, teamid }) => {
@@ -49,7 +62,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     if (teams.every((team) => team.ready)) {
       await supabase.from("rooms").update({ ready: true }).eq("id", roomid);
       console.log(`Room ${roomid} is ready!`);
-      startLobbyTimer(roomid);
+      roomTimerManager.startLobbyTimer(roomid);
       await updateRoomCycle(roomid);
     }
   });

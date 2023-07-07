@@ -1,7 +1,10 @@
 import supabase from "../supabase";
-import { resetTimer, deleteTimer } from "./timer";
+//import { resetTimer, deleteTimer } from "./timer";
+import { RoomTimerManager } from '../services/RoomTimerManager';
 
 export async function updateRoomCycle(roomId: string) {
+  const roomTimerManager = RoomTimerManager.getInstance();
+
   const { data: room, error: fetchError } = await supabase
   .from("rooms")
   .select("*")
@@ -14,7 +17,7 @@ export async function updateRoomCycle(roomId: string) {
   }
 
   if (room.status === 'done') {
-    deleteTimer(roomId);
+    roomTimerManager.deleteTimer(roomId);
     return;
   }
 

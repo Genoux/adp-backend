@@ -3,13 +3,12 @@ import supabase from "../supabase";
 export async function selectUserChampion(roomid: string, selectedChampion: string | null) {
     const { data: team } = await supabase
       .from("teams")
-      .select("id, heroes_pool, heroes_selected")
+      .select("id, heroes_pool, heroes_selected, room(status)")
       .eq("room", roomid)
       .eq("isTurn", true)
       .single();
 
     if (!team) return;
-
     const { heroes_pool, heroes_selected } = team;
 
     let hero;
