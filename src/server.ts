@@ -10,7 +10,7 @@ export const startServer = () => {
   const app = express();
   
   app.use(cors({
-    origin: process.env.SOCKET_CLIENT_URL || 'https://draft.tournoishaq.ca/', // this should be your client's origin
+    origin: 'https://draft.tournoishaq.ca',
     credentials: true,
   })); 
 
@@ -18,7 +18,7 @@ export const startServer = () => {
   
   const io = new Server(server, {
     cors: {
-      origin: process.env.SOCKET_CLIENT_URL || 'https://draft.tournoishaq.ca/', // this should be your client's origin
+      origin: 'https://draft.tournoishaq.ca', // this should be your client's origin
       methods: ["GET", "POST"],
       credentials: true
     }
