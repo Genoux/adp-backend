@@ -62,8 +62,8 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     if (teams.every((team) => team.ready)) {
       await supabase.from("rooms").update({ ready: true }).eq("id", roomid);
       console.log(`Room ${roomid} is ready!`);
-      roomTimerManager.startLobbyTimer(roomid);
       await updateRoomCycle(roomid);
+      roomTimerManager.startLobbyTimer(roomid);
     }
   });
 };
