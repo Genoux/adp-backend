@@ -88,7 +88,6 @@ private async getRoomStatus(roomid: string) {
     timer.addEventListener("secondsUpdated", () => {
       const timeValues = timer.getTimeValues();
       const currentSecond = timeValues.seconds;
-      console.log("RoomTimerManager - timer.addEventListener - currentSecond:", currentSecond);
 
       // Only emit event if the second value has changed
       if (currentSecond !== lastSecond) {
@@ -108,7 +107,6 @@ private async getRoomStatus(roomid: string) {
 
     if (onTargetAchieved) {
       timer.addEventListener("targetAchieved", async () => {
-        console.log("timer.addEventListener - targetAchieved");
         this.roomTimers[roomid].isTimeUp = true;
 
         // Only proceed if not locked
@@ -145,7 +143,6 @@ private async getRoomStatus(roomid: string) {
 
     this.addTimerEventListeners(timer, roomid, io, async () => {
       this.stopTimer(roomid);
-     // io.emit("CHAMPION_SELECTED1", true);
       io.to(roomid).emit("CHAMPION_SELECTED", true);
       await selectUserChampion(roomid, null);
       const cycle = await updateRoomCycle(roomid);
@@ -159,8 +156,6 @@ private async getRoomStatus(roomid: string) {
 
   // Remaining functions such as startLobbyTimer, startTimer, deleteTimer, stopTimer, resetTimer, etc.
   startLobbyTimer(roomid: string) {
-    console.log("RoomTimerManager - startLobbyTimer - this.roomTimers[roomid]:", this.roomTimers[roomid]);
-
     if (!this.roomTimers[roomid]) return;
     this.roomTimers[roomid].countdownTimerLobby.start({
       countdown: true,
