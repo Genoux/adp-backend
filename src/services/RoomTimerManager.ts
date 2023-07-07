@@ -83,22 +83,17 @@ private async getRoomStatus(roomid: string) {
     io: Server,
     onTargetAchieved?: () => Promise<void>
   ) {
-    let lastSecond = -1;
-
+    
     timer.addEventListener("secondsUpdated", () => {
       const timeValues = timer.getTimeValues();
-      const currentSecond = timeValues.seconds;
 
       // Only emit event if the second value has changed
-      if (currentSecond !== lastSecond) {
         // Format time as "MM:SS"
         const formattedTime = `${timeValues.minutes
           .toString()
           .padStart(2, "0")}:${timeValues.seconds.toString().padStart(2, "0")}`;
-        io.to(roomid).emit("TIMER", formattedTime);
-        lastSecond = currentSecond;
-      }
-
+      io.to(roomid).emit("TIMER", formattedTime);
+      
       // Delete the timer if it doesn't exist in roomTimers anymore
       if (!this.roomTimers[roomid]) {
         this.deleteTimer(roomid);
