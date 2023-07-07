@@ -10,7 +10,7 @@ export const startServer = () => {
   const app = express();
   
   app.use(cors({
-    origin: 'http://localhost:3000', // this should be your client's origin
+    origin: '*', // Accept all origins
     credentials: true,
   })); 
 
@@ -18,7 +18,7 @@ export const startServer = () => {
   
   const io = new Server(server, {
     cors: {
-      origin: 'http://localhost:3000', // this should be your client's origin
+      origin: '*', // Accept all origins
       methods: ["GET", "POST"],
       credentials: true
     }
