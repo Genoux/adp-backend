@@ -25,11 +25,12 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     roomTimerManager.lockRoomTimer(roomid);
   
     await selectUserChampion(roomid, selectedChampion);
-    io.to(roomid).emit(
+    socket.emit(
       "message",
-      `User ${socket.id} has selected ${selectedChampion}`
+      `${socket.id} has selected ${selectedChampion}`
     );
     
+    //TODO
     const cycle = await updateRoomCycle(roomid);
     if (!await switchTurn(roomid, cycle)) {
       socket.emit("CHAMPION_SELECTED", true);
@@ -37,7 +38,6 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
   
     roomTimerManager.resetTimer(roomid);
     roomTimerManager.unlockRoomTimer(roomid);
-    
     socket.to(roomid).emit("TIMER_RESET", true);
   });
 

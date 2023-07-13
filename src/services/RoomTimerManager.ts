@@ -103,11 +103,11 @@ private async getRoomStatus(roomid: string) {
     if (onTargetAchieved) {
       timer.addEventListener("targetAchieved", async () => {
         this.roomTimers[roomid].isTimeUp = true;
-
-        // Only proceed if not locked
-        if (!this.roomTimers[roomid].lock) {
-          onTargetAchieved();
-        }
+        setTimeout(async () => {
+          if (!this.roomTimers[roomid].lock) {
+            onTargetAchieved();
+          }
+        }, 2000);
       });
     }
   }

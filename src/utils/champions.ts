@@ -39,14 +39,14 @@ export async function selectUserChampion(roomid: string, selectedChampion: strin
     if (nullSlotIndex !== -1) {
       heroes_selected[nullSlotIndex] = hero;
     }
-
+  
     const updatedHeroesPool = heroes_pool.map((hero: Hero) =>
       hero.name === selectedChampion ? { ...hero, selected: true } : hero
     );
     
     await supabase
     .from('teams')
-    .update({ heroes_selected: heroes_selected, pick: false })
+    .update({ heroes_selected: heroes_selected, heroes_pool: updatedHeroesPool, pick: false })
     .eq('id', team.id);
 
     await Promise.all([
