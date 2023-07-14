@@ -2,57 +2,115 @@ import supabase from "../supabase";
 
 interface Hero {
   name: string;
-  selected: boolean;
+  selected?: boolean;
 }
 
-export async function selectUserChampion(roomid: string, selectedChampion: string | null) {
-    const { data: team } = await supabase
-      .from("teams")
-      .select("id, heroes_pool, heroes_selected, room(status), clicked_hero")
-      .eq("room", roomid)
-      .eq("isTurn", true)
-      .single();
+interface Team {
+  id: string;
+  heroes_selected: Hero[];
+  heroes_ban: Hero[];
+  clicked_hero: string;
+  room: {
+    status: string;
+    heroes_pool: Hero[];
+  };
+}
 
-    if (!team) return;
-    const { heroes_pool, heroes_selected, clicked_hero } = team;
-  
-    selectedChampion = selectedChampion || clicked_hero;
+export async function banUserChampion(
+  roomid: string,
+  selectedChampion: string | null
+) {
+  const { data: team } = await supabase
+    .from("teams")
+    .select(
+      "id, heroes_ban, room(status, heroes_pool), clicked_hero"
+    )
+    .eq("room", roomid)
+    .eq("isTurn", true)
+    .single();
 
-    let hero;
-    if (selectedChampion) {
-      hero = heroes_pool.find((hero: Hero) => hero.name === selectedChampion);
-    } else {
-      const unselectedHeroes = heroes_pool.filter(
-        (hero: Hero) => !hero.selected
-      );
-      if (unselectedHeroes.length === 0)
-        throw new Error("No unselected heroes left");
-      hero =
-        unselectedHeroes[Math.floor(Math.random() * unselectedHeroes.length)];
-    }
+  if (!team) return;
+  const { heroes_ban, clicked_hero, room } = team as unknown as Team;
+  selectedChampion = selectedChampion || clicked_hero;
 
-    hero.selected = true;
+  let hero;
+  if (selectedChampion) {
+    hero = room.heroes_pool.find((hero: Hero) => hero.name === selectedChampion);
+  }
 
-    const nullSlotIndex = heroes_selected.findIndex(
-      (hero: Hero) => hero.name === null
-    );
-    if (nullSlotIndex !== -1) {
-      heroes_selected[nullSlotIndex] = hero;
-    }
-  
-    const updatedHeroesPool = heroes_pool.map((hero: Hero) =>
-      hero.name === selectedChampion ? { ...hero, selected: true } : hero
-    );
-    
-    await supabase
-    .from('teams')
-    .update({ heroes_selected: heroes_selected, heroes_pool: updatedHeroesPool, pick: false })
-    .eq('id', team.id);
+  if (!hero) throw new Error("No hero found");
 
-    await Promise.all([
-      supabase
-        .from("teams")
-        .update({ heroes_pool: updatedHeroesPool, clicked_hero: null })
-        .eq("room", roomid),
-    ]);
+  const nullSlotIndex = heroes_ban.findIndex((hero: Hero) => hero.name === null);
+  if (nullSlotIndex !== -1) {
+    heroes_ban[nullSlotIndex] = { name: hero.name };
+  }
+
+  const updatedHeroesPool = room.heroes_pool.map((hero: Hero) =>
+    hero.name === selectedChampion ? { ...hero, selected: true } : hero
+  );
+
+  await supabase
+    .from("teams")
+    .update({
+      heroes_ban: heroes_ban.map(({ name }) => ({ name })),
+      clicked_hero: null,
+    })
+    .eq("id", team.id);
+
+  await supabase
+    .from("rooms")
+    .update({ heroes_pool: updatedHeroesPool })
+    .eq("id", roomid);
+}
+
+export async function selectUserChampion(
+  roomid: string,
+  selectedChampion: string | null
+) {
+  const { data: team } = await supabase
+    .from("teams")
+    .select(
+      "id, heroes_selected, room(status, heroes_pool), clicked_hero"
+    )
+    .eq("room", roomid)
+    .eq("isTurn", true)
+    .single();
+
+  if (!team) return;
+  const { heroes_selected, clicked_hero, room } = team as unknown as Team;
+  selectedChampion = selectedChampion || clicked_hero;
+
+  let hero;
+  if (selectedChampion) {
+    hero = room.heroes_pool.find((hero: Hero) => hero.name === selectedChampion);
+  } else {
+    const unselectedHeroes = room.heroes_pool.filter((hero: Hero) => !hero.selected);
+    if (unselectedHeroes.length === 0)
+      throw new Error("No unselected heroes left");
+    hero = unselectedHeroes[Math.floor(Math.random() * unselectedHeroes.length)];
+  }
+
+  if (!hero) throw new Error("No hero found");
+
+  const nullSlotIndex = heroes_selected.findIndex((hero: Hero) => hero.name === null);
+  if (nullSlotIndex !== -1) {
+    heroes_selected[nullSlotIndex] = { name: hero.name };
+  }
+
+  const updatedHeroesPool = room.heroes_pool.map((hero: Hero) =>
+    hero.name === selectedChampion ? { ...hero, selected: true } : hero
+  );
+
+  await supabase
+    .from("teams")
+    .update({
+      heroes_selected: heroes_selected.map(({ name }) => ({ name })),
+      clicked_hero: null,
+    })
+    .eq("id", team.id);
+
+  await supabase
+    .from("rooms")
+    .update({ heroes_pool: updatedHeroesPool })
+    .eq("id", roomid);
 }

@@ -15,6 +15,7 @@ interface RoomTimer {
   lock: boolean;
   timerId?: NodeJS.Timeout;
   isTimeUp: boolean;
+  targetAchievedTimeout?: NodeJS.Timeout;
 }
 
 export class RoomTimerManager {
@@ -24,6 +25,13 @@ export class RoomTimerManager {
 
   private constructor() { }
   
+  cancelTargetAchieved(roomid: string) {
+    if (!this.roomTimers[roomid]) return;
+    this.roomTimers[roomid].countdownTimer.stop();
+    if (this.roomTimers[roomid].targetAchievedTimeout) {
+      clearTimeout(this.roomTimers[roomid].targetAchievedTimeout);
+    }
+  }
 
   async monitorRoomStatus(roomid: string) {
     // Assume that a null status indicates that the room does not exist or has been done.
@@ -102,8 +110,8 @@ private async getRoomStatus(roomid: string) {
 
     if (onTargetAchieved) {
       timer.addEventListener("targetAchieved", async () => {
-        this.roomTimers[roomid].isTimeUp = true;
-        setTimeout(async () => {
+        this.roomTimers[roomid].targetAchievedTimeout = setTimeout(async () => {
+          this.roomTimers[roomid].isTimeUp = true;
           if (!this.roomTimers[roomid].lock) {
             onTargetAchieved();
           }

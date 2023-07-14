@@ -23,10 +23,15 @@ export async function updateRoomCycle(roomId: string) {
 
   const currentCycle = room.cycle;
   const newCycle = currentCycle + 1;
+  let phase = room.status;
+
+  if (newCycle === 1) {
+    phase = 'picking';
+  } 
 
   const { error: updateError } = await supabase
   .from('rooms')
-  .update({ cycle: newCycle })
+  .update({ cycle: newCycle, status: phase })
   .eq('id', roomId);
 
   if (updateError) {

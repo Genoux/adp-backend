@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import supabase from "../supabase";
-import { selectUserChampion } from "../utils/champions";
+import { selectUserChampion, banUserChampion } from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 // import {
@@ -25,21 +25,36 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     roomTimerManager.lockRoomTimer(roomid);
   
     await selectUserChampion(roomid, selectedChampion);
-    socket.emit(
-      "message",
-      `${socket.id} has selected ${selectedChampion}`
-    );
-    
-    //TODO
+
+    handleTurn(roomid, io, socket);
+   
+  });
+
+  socket.on("BAN_CHAMPION", async ({ roomid, selectedChampion }) => {
+    //cancelServerSelection(roomid);
+
+    if (roomTimerManager.isTimeUp(roomid)) {
+      console.log('Cannot select champion, time is up.');
+      return;
+    }
+    roomTimerManager.lockRoomTimer(roomid);
+  
+    await banUserChampion(roomid, selectedChampion);
+
+    handleTurn(roomid, io, socket);
+   
+  });
+
+ async function handleTurn(roomid: string, io: Server, socket: Socket) {
     const cycle = await updateRoomCycle(roomid);
     if (!await switchTurn(roomid, cycle)) {
       socket.emit("CHAMPION_SELECTED", true);
     }
-  
+    roomTimerManager.cancelTargetAchieved(roomid);
     roomTimerManager.resetTimer(roomid);
     roomTimerManager.unlockRoomTimer(roomid);
     socket.to(roomid).emit("TIMER_RESET", true);
-  });
+  }
 
   socket.on("RESET_TIMER", ({ roomid }) => {
     roomTimerManager.resetTimer(roomid);
@@ -60,7 +75,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     console.log(`Team ${teamid} is ready!`);
 
     if (teams.every((team) => team.ready)) {
-      await supabase.from("rooms").update({ ready: true }).eq("id", roomid);
+      await supabase.from("rooms").update({ ready: true, status: 'planning' }).eq("id", roomid);
       console.log(`Room ${roomid} is ready!`);
       await updateRoomCycle(roomid);
       roomTimerManager.startLobbyTimer(roomid);

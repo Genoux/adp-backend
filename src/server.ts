@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { handleRoomEvents } from './events/roomEvents';
 import { handleUserEvents } from './events/userEvents';
 import { cleanUpRoomTimers } from './utils/timer';
+import { selectUserChampion } from './utils/champions';
 import cors from 'cors';
 
 export const startServer = () => {
@@ -32,6 +33,15 @@ export const startServer = () => {
   // Handle the root route
   app.get('/', (req, res) => {
     res.sendStatus(200);  // Send a 200 status code (OK)
+  });
+
+  app.post('/utility', async (req, res) => {
+    try {
+      const result = await selectUserChampion('305', null); // Assuming your utility function is async
+      res.status(200).json(result); // Return the result of your function
+    } catch (error) {
+      res.status(500).json({ error: 'There was an error.' }); // Error handling
+    }
   });
 
   server.listen(process.env.PORT || 4000, async() => {
