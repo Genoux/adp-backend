@@ -1,15 +1,8 @@
 import { Server, Socket } from "socket.io";
 import supabase from "../supabase";
-import { selectUserChampion, banUserChampion } from "../utils/champions";
+import selectChampion from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
-// import {
-//   resetTimer,
-//   startLobbyTimer,
-//   stopTimer,
-//   lockRoomTimer, unlockRoomTimer, cancelServerSelection
-// } from "../utils/timer";
-
 import { RoomTimerManager } from '../services/RoomTimerManager';
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
@@ -24,28 +17,13 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     }
     roomTimerManager.lockRoomTimer(roomid);
   
-    await selectUserChampion(roomid, selectedChampion);
+    await selectChampion(roomid, selectedChampion);
 
     handleTurn(roomid, io, socket);
    
   });
 
-  socket.on("BAN_CHAMPION", async ({ roomid, selectedChampion }) => {
-    //cancelServerSelection(roomid);
-
-    if (roomTimerManager.isTimeUp(roomid)) {
-      console.log('Cannot select champion, time is up.');
-      return;
-    }
-    roomTimerManager.lockRoomTimer(roomid);
-  
-    await banUserChampion(roomid, selectedChampion);
-
-    handleTurn(roomid, io, socket);
-   
-  });
-
- async function handleTurn(roomid: string, io: Server, socket: Socket) {
+  async function handleTurn(roomid: string, io: Server, socket: Socket) {
     const cycle = await updateRoomCycle(roomid);
     if (!await switchTurn(roomid, cycle)) {
       socket.emit("CHAMPION_SELECTED", true);

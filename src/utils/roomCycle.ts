@@ -1,5 +1,4 @@
 import supabase from "../supabase";
-//import { resetTimer, deleteTimer } from "./timer";
 import { RoomTimerManager } from '../services/RoomTimerManager';
 
 export async function updateRoomCycle(roomId: string) {
@@ -26,7 +25,10 @@ export async function updateRoomCycle(roomId: string) {
   let phase = room.status;
 
   if (newCycle === 1) {
-    phase = 'picking';
+    phase = 'ban';
+  } 
+  if (newCycle === 7) {
+    phase = 'select';
   } 
 
   const { error: updateError } = await supabase

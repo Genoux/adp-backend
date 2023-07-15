@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Timer } from "easytimer.js";
 import { Server, Socket } from "socket.io";
-import { selectUserChampion } from "../utils/champions";
+import selectChampion from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 import { delay } from '../utils/delay';
@@ -148,7 +148,7 @@ private async getRoomStatus(roomid: string) {
     this.addTimerEventListeners(timer, roomid, io, async () => {
       this.stopTimer(roomid);
       io.to(roomid).emit("CHAMPION_SELECTED", true);
-      await selectUserChampion(roomid, null);
+      await selectChampion(roomid, null);
       const cycle = await updateRoomCycle(roomid);
 
       await switchTurn(roomid, cycle);
