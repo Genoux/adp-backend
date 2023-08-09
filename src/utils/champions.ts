@@ -22,6 +22,8 @@ export default async function selectChampion(
   roomid: string,
   selectedChampion: string | null
 ) {
+  console.log("roomid:", roomid);
+  console.log("selectedChampion:", selectedChampion);
   const { data: team, error: teamFetchError  } = await supabase
     .from("teams")
     .select(
