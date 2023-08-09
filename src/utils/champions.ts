@@ -22,7 +22,7 @@ export default async function selectChampion(
   roomid: string,
   selectedChampion: string | null
 ) {
-  const { data: team } = await supabase
+  const { data: team, error: teamFetchError  } = await supabase
     .from("teams")
     .select(
       "id, heroes_selected, heroes_ban, room(status, heroes_pool), clicked_hero"
@@ -30,8 +30,12 @@ export default async function selectChampion(
     .eq("room", roomid)
     .eq("isTurn", true)
     .single();
+  
+  console.log("team:", team);
 
-  if (!team) return;
+  if (!team || teamFetchError) {
+    throw new Error("Team fetch error" + teamFetchError);
+  };
 
   await supabase.from("teams").update({ clicked_hero: null }).eq("id", team.id);
 

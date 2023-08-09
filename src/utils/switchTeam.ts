@@ -10,6 +10,7 @@ export async function switchTurn(roomId: string, roomCycle: number) {
     .from("teams")
     .select("*, room(id, cycle, status)")
     .eq("room", roomId);
+  console.log("switchTurn - teams:", teams);
 
   if (teamFetchError || !teams || teams.length === 0) {
     console.error("Error fetching teams or no teams found:", teamFetchError);
