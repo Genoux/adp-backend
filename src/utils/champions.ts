@@ -35,8 +35,9 @@ export default async function selectChampion(
   
   console.log("team:", team);
 
-  if (!team || teamFetchError) {
-    throw new Error("Team fetch error" + teamFetchError);
+  if (teamFetchError) {
+    console.error(teamFetchError);
+    return
   };
 
   await supabase.from("teams").update({ clicked_hero: null }).eq("id", team.id);
