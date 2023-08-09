@@ -8,7 +8,7 @@ export async function switchTurn(roomId: string, roomCycle: number) {
 
   const { data: teams, error: teamFetchError } = await supabase
     .from("teams")
-    .select("*, room(id, cycle, status)")
+    .select("*")
     .eq("room", roomId);
   console.log("switchTurn - teams:", teams);
 
