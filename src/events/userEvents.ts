@@ -8,7 +8,8 @@ import { RoomTimerManager } from '../services/RoomTimerManager';
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on("SELECT_CHAMPION", async ({ roomid, selectedChampion }) => {
+  socket.on("SELECT_CHAMPION", async ({ teamid, roomid, selectedChampion }) => {
+    console.log("socket.on - teamid:", teamid);
     //cancelServerSelection(roomid);
 
     if (roomTimerManager.isTimeUp(roomid)) {
@@ -17,7 +18,8 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     }
     roomTimerManager.lockRoomTimer(roomid);
   
-    await selectChampion(roomid, selectedChampion);
+    await selectChampion(teamid, roomid, selectedChampion);
+    console.log("socket.on - selectedChampion:", selectedChampion);
 
     handleTurn(roomid, io, socket);
    

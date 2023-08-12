@@ -27,13 +27,13 @@ export async function switchTurn(roomId: string, roomCycle: number) {
     // set room status to done
     await supabase.from("rooms").update({ status: "done" }).eq("id", roomId);
 
-    await supabase.from("teams").update({ isTurn: false }).eq("room", roomId);
+    await supabase.from("teams").update({ isturn: false }).eq("room", roomId);
 
     return "done";
   }
 
   const updatePromises = teams.map((team: any) =>
-    supabase.from("teams").update({ isTurn: !team.isTurn }).eq("id", team.id)
+    supabase.from("teams").update({ isturn: !team.isturn, clicked_hero: null }).eq("id", team.id)
   );
 
   await Promise.all(updatePromises);

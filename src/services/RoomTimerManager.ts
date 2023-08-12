@@ -148,7 +148,7 @@ private async getRoomStatus(roomid: string) {
     this.addTimerEventListeners(timer, roomid, io, async () => {
       this.stopTimer(roomid);
       io.to(roomid).emit("CHAMPION_SELECTED", true);
-      await selectChampion(roomid, null);
+      await selectChampion(null, roomid, null);
       const cycle = await updateRoomCycle(roomid);
 
       await switchTurn(roomid, cycle);

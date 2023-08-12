@@ -36,9 +36,9 @@ export const startServer = () => {
 
   app.post('/utility', async (req, res) => {
     try {
-      const result = userAction('337', 'Sona')
+      //const result = userAction('337', 'Sona')
      // const result = await selectUserChampion('305', null); // Assuming your utility function is async
-      res.status(200).json(result); // Return the result of your function
+      res.status(200).json("result"); // Return the result of your function
     } catch (error) {
       res.status(500).json({ error: 'There was an error.' }); // Error handling
     }

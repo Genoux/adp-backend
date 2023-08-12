@@ -7,10 +7,6 @@ type Team = {
   heroes_selected: { name: string; selected?: boolean }[];
   heroes_ban: { name: string; selected?: boolean }[];
   clicked_hero: string;
-  room: {
-    status: string;
-    heroes_pool: Hero[];
-  };
 };
 
 const actionFunctionMapping = {
@@ -19,6 +15,7 @@ const actionFunctionMapping = {
 };
 
 export default async function selectChampion(
+  teamid: string | null,
   roomid: string,
   selectedChampion: string | null
 ) {
@@ -27,24 +24,23 @@ export default async function selectChampion(
   const { data: team, error: teamFetchError  } = await supabase
     .from("teams")
     .select(
-      "id, heroes_selected, heroes_ban, room(status, heroes_pool), clicked_hero"
+      "id, isturn, heroes_selected, heroes_ban, clicked_hero"
     )
-    .eq("room", roomid)
-    .eq("isTurn", true)
-    .single();
+    .eq("room", roomid).eq("isturn", true).single();
   
-  console.log("team:", team);
-
-  if (teamFetchError) {
-    console.error(teamFetchError);
-    return
-  };
-
+  const { data: room } = await supabase
+      .from("rooms")
+      .select("id, status, heroes_pool")
+      .eq("id", roomid)
+      .single();
+  
+    if (!team || !room ) return;
+  
   await supabase.from("teams").update({ clicked_hero: null }).eq("id", team.id);
 
   const typedTeam = team as unknown as Team
 
-  const action = typedTeam.room.status === "ban" ? "ban" : "select";
+  const action = room.status === "ban" ? "ban" : "select";
   const heroes_action =
     action === "ban" ? team.heroes_ban : team.heroes_selected;
 
@@ -54,12 +50,12 @@ export default async function selectChampion(
 
   let hero: Hero | undefined;
   if (selectedChampion) {
-    hero = typedTeam.room.heroes_pool.find(
+    hero = room.heroes_pool.find(
       (hero: Hero) => hero.name === selectedChampion
     );
     if (hero?.selected) throw new Error("Hero already selected");
   } else if (!selectedChampion && action === "select") {
-    hero = getRandomUnselectedHero(typedTeam.room.heroes_pool);
+    hero = getRandomUnselectedHero(room.heroes_pool);
     if (!hero) throw new Error("No unselected hero found");
   }
 
@@ -83,7 +79,7 @@ export default async function selectChampion(
     }
   }
 
-  const updatedHeroesPool = typedTeam.room.heroes_pool.map((poolHero: Hero) =>
+  const updatedHeroesPool = room.heroes_pool.map((poolHero: Hero) =>
     poolHero.name === hero?.name ? { ...poolHero, selected: true } : poolHero
   );
 
