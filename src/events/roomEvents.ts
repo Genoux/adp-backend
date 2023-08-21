@@ -13,6 +13,10 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     
     console.dir(`User ${socket.id} joined room ${roomid} as Team ${teamid}`);
 
+   setTimeout(async () => {
+    await supabase.from("teams").update({ connected: true, socketid: socket.id }).eq("id", teamid)
+   }, 1000);
+
     socket.emit("message", `Welcome to room ${roomid}, Team ${teamid}!`);
 
     roomTimerManager.initTimer(roomid, io, socket);
@@ -22,12 +26,20 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       .select("*")
       .eq("id", roomid)
       .single();
-    if (room && room.ready && room.status !== "done" && room.cycle !== 0) {
+    
+    if(!room) {
+      console.log("room not found")
+      return
+    }
+
+    
+    if (room.ready && room.status !== "done" && room.cycle !== 0) {
       roomTimerManager.startTimer(roomid);
     }
   });
 
-  socket.on("disconnect", (reason) => {
+  socket.on("disconnect", async (reason) => {
     console.log(`User ${socket.id} disconnected because ${reason}`);
+    await supabase.from("teams").update({ connected: false, socketid: null }).eq("socketid", socket.id)
   });
 };
