@@ -7,10 +7,7 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   socket.on("joinRoom", async ({ roomid, teamid }) => {
-    console.log("socket.on - roomid:", roomid);
-
     socket.join(roomid);
-    
     console.dir(`User ${socket.id} joined room ${roomid} as Team ${teamid}`);
 
    setTimeout(async () => {
