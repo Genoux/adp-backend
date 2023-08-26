@@ -10,6 +10,7 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     socket.join(roomid);
     console.dir(`User ${socket.id} joined room ${roomid} as Team ${teamid}`);
 
+    //TODO Handle multiple connection. If on quit but there's still a connection, connected is still true
    setTimeout(async () => {
     await supabase.from("teams").update({ connected: true, socketid: socket.id }).eq("id", teamid)
    }, 1000);
