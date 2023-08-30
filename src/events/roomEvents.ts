@@ -10,10 +10,6 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     socket.join(roomid);
     console.dir(`User ${socket.id} joined room ${roomid} as Team ${teamid}`);
 
-    //TODO Handle multiple connection. If on quit but there's still a connection, connected is still true
-  //  setTimeout(async () => {
-  //   await supabase.from("teams").update({ connected: true, socketid: socket.id }).eq("id", teamid)
-    //  }, 1000);
     setTimeout(async () => {
       const { data: team } = await supabase.from("teams").select("socketid").eq("id", teamid).single();
       const existingSocketIds = team?.socketid ? team.socketid : [];
@@ -31,13 +27,13 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       .select("*")
       .eq("id", roomid)
       .single();
-    
-    if(!room) {
+
+    if (!room) {
       console.log("room not found")
       return
     }
 
-    
+
     if (room.ready && room.status !== "done" && room.cycle !== 0) {
       roomTimerManager.startTimer(roomid);
     }
