@@ -12,8 +12,8 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
 
     setTimeout(async () => {
       const { data: team } = await supabase.from("teams").select("socketid").eq("id", teamid).single();
-      const existingSocketIds = team?.socketid ? team.socketid : [];
-      const newSocketIds = [...existingSocketIds, socket.id];
+      const existingSocketIds = team?.socketid ? JSON.parse(team.socketid) : [];
+      const newSocketIds = JSON.stringify([...existingSocketIds, socket.id]);
       socket.data.teamid = teamid;
       await supabase.from("teams").update({ connected: true, socketid: newSocketIds }).eq("id", teamid);
     }, 1000);
@@ -44,10 +44,12 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     const teamid = socket.data.teamid;
 
     const { data: team } = await supabase.from("teams").select("socketid").eq("id", teamid).single();
-    const existingSocketIds = team?.socketid ? team.socketid : [];
-    const newSocketIds = existingSocketIds.filter((id: string) => id !== socket.id);
-    console.log(newSocketIds);
-    const isConnected = newSocketIds.length > 0;
+    const existingSocketIds = team?.socketid ? JSON.parse(team.socketid) : [];
+
+    const filteredSocketIds = existingSocketIds.filter((id: string) => id !== socket.id);
+    const isConnected = filteredSocketIds.length > 0;
+    const newSocketIds = JSON.stringify(filteredSocketIds);
+
     await supabase.from("teams").update({ connected: isConnected, socketid: newSocketIds }).eq("id", teamid);
   });
 };
