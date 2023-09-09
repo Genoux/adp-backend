@@ -10,7 +10,6 @@ export async function switchTurn(roomId: string, roomCycle: number) {
     .from("teams")
     .select("*")
     .eq("room", roomId);
-  console.log("switchTurn - teams:", teams);
 
   if (teamFetchError || !teams || teams.length === 0) {
     console.error("Error fetching teams or no teams found:", teamFetchError);
@@ -53,11 +52,3 @@ function shouldSwitchTurn(cycle: number) {
     return false; // Continue with the same team's turn
   }
 }
-
-// if (cycle === 1 || cycle === 3 || cycle === 5 || cycle === 7 || cycle === 9) {
-//   return true; // Switch turns
-// } else if (cycle >= 10) {
-//   return "done"; // All rounds completed
-// } else {
-//   return false; // Continue with the same team's turn
-// }
