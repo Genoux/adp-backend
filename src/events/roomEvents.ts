@@ -33,8 +33,7 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       return
     }
 
-
-    if (room.ready && room.status !== "done" && room.cycle !== 0) {
+    if (room.ready && room.status !== "done") {
       roomTimerManager.startTimer(roomid);
     }
   });
