@@ -30,7 +30,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     if (!switchTurnResult) {
       setTimeout(() => {
         socket.emit("CHAMPION_SELECTED", switchTurnResult);
-      }, 500);
+      }, 5000);
     }
 
     roomTimerManager.cancelTargetAchieved(roomid);
