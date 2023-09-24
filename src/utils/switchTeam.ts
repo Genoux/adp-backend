@@ -40,7 +40,6 @@ export async function switchTurn(roomId: string, roomCycle: number) {
   return true;
 }
 
-//TODO: ADD BANNING CYCLE 1-B 2-R 3-B 4-R 5-B 6-R, then regula cycle so B-7 R-8 R-9 B-10 B-11 R-12 R-13 B-14 B-15 R-16
 function shouldSwitchTurn(cycle: number) {
   const switchTurns = [1, 2, 3, 4, 5, 6, 7, 9, 11, 13, 15];
 
