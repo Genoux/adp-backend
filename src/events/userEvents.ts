@@ -4,7 +4,7 @@ import selectChampion from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 import { RoomTimerManager } from '../services/RoomTimerManager';
-import { assignNumberOfTurn } from "../utils/teanNumberOfTurn";
+import { assignNumberOfTurn } from "../utils/teamNumberOfTurn";
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
