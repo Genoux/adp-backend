@@ -4,7 +4,6 @@ import selectChampion from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 import { RoomTimerManager } from '../services/RoomTimerManager';
-import { assignNumberOfTurn } from "../utils/teamNumberOfTurn";
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
@@ -23,13 +22,11 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
 
   async function handleTurn(roomid: string, io: Server, socket: Socket) {
     const cycle = await updateRoomCycle(roomid);
-    const switchTurnResult = await switchTurn(roomid, cycle);
+    await switchTurn(roomid, cycle);
 
-    if (!switchTurnResult) {
-      socket.emit("CHAMPION_SELECTED", switchTurnResult);
-    }
-
-    await assignNumberOfTurn(cycle, roomid)
+    // if (!switchTurnResult) {
+    //   socket.emit("CHAMPION_SELECTED", switchTurnResult);
+    // }
 
     roomTimerManager.cancelTargetAchieved(roomid);
     roomTimerManager.resetTimer(roomid);
