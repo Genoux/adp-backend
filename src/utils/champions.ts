@@ -22,7 +22,7 @@ export default async function selectChampion(
   const { data: team, error: teamFetchError  } = await supabase
     .from("teams")
     .select(
-      "id, isturn, heroes_selected, heroes_ban, clicked_hero"
+      "id, isturn, heroes_selected, heroes_ban, clicked_hero, nb_turn"
     )
     .eq("room", roomid).eq("isturn", true).single();
   
@@ -90,6 +90,7 @@ export default async function selectChampion(
           selected,
         })
       ),
+      nb_turn: team.nb_turn - 1 
     })
     .eq("id", team.id);
 

@@ -24,7 +24,6 @@ export const startServer = () => {
   });
 
   io.on('connection', (socket: Socket) => {
-    console.log("io.on - socket:", socket);
     handleRoomEvents(socket, io);
     handleUserEvents(socket, io);
   });

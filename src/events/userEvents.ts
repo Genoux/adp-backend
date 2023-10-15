@@ -4,6 +4,7 @@ import selectChampion from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 import { RoomTimerManager } from '../services/RoomTimerManager';
+import { assignNumberOfTurn } from "../utils/teanNumberOfTurn";
 
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
@@ -27,6 +28,8 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     if (!switchTurnResult) {
       socket.emit("CHAMPION_SELECTED", switchTurnResult);
     }
+
+    await assignNumberOfTurn(cycle, roomid)
 
     roomTimerManager.cancelTargetAchieved(roomid);
     roomTimerManager.resetTimer(roomid);

@@ -37,6 +37,8 @@ export async function switchTurn(roomId: string, roomCycle: number) {
 
   await Promise.all(updatePromises);
 
+  //await assignNumberOfTurn(roomCycle + 1, roomId);
+
   return true;
 }
 
