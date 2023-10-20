@@ -81,7 +81,6 @@ private async getRoomStatus(roomid: string) {
         this.deleteTimer(roomId);
       }
     }
-    console.log(this.roomTimers);
   }
 
   // Common event listener for timers

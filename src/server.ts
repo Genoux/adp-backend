@@ -3,7 +3,6 @@ import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { handleRoomEvents } from './events/roomEvents';
 import { handleUserEvents } from './events/userEvents';
-import  userAction from './utils/champions';
 import cors from 'cors';
 
 export const startServer = () => {

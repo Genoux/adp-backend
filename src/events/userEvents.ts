@@ -9,8 +9,6 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   socket.on("SELECT_CHAMPION", async ({ teamid, roomid, selectedChampion }) => {
-    //cancelServerSelection(roomid);
-
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
       return;
@@ -24,14 +22,11 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
 
   async function handleTurn(roomid: string, io: Server, socket: Socket) {
     const cycle = await updateRoomCycle(roomid);
-    const switchTurnResult = await switchTurn(roomid, cycle);
-    console.log("handleTurn - switchTurnResult:", switchTurnResult);
+    await switchTurn(roomid, cycle);
 
-    if (!switchTurnResult) {
-      setTimeout(() => {
-        socket.emit("CHAMPION_SELECTED", switchTurnResult);
-      }, 500);
-    }
+    // if (!switchTurnResult) {
+    //   socket.emit("CHAMPION_SELECTED", switchTurnResult);
+    // }
 
     roomTimerManager.cancelTargetAchieved(roomid);
     roomTimerManager.resetTimer(roomid);
