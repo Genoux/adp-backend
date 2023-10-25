@@ -1,11 +1,15 @@
 import supabase from "../supabase";
 
-type Hero = { name: string | null; selected?: boolean };
+type Hero = { 
+  id: string;
+  name: string | null; 
+  selected?: boolean;
+};
 
 type Team = {
   id: number;
-  heroes_selected: { name: string; selected?: boolean }[];
-  heroes_ban: { name: string; selected?: boolean }[];
+  heroes_selected: { id: string; name: string; selected?: boolean }[];
+  heroes_ban: { id: string; name: string; selected?: boolean }[];
   clicked_hero: string;
 };
 
@@ -59,21 +63,21 @@ export default async function selectChampion(
 
   if (action === "ban") {
     const currentBanIndex = heroes_action.findIndex(
-      (hero: { name: string; selected?: boolean }) => !hero.selected
+      (hero: { id: string, name: string; selected?: boolean }) => !hero.selected
     );
     if (currentBanIndex !== -1) {
       if (hero) {
-        heroes_action[currentBanIndex] = { name: hero.name, selected: true };
+        heroes_action[currentBanIndex] = { id: hero.id, name: hero.name, selected: true };
       } else {
-        heroes_action[currentBanIndex] = { name: null, selected: true };
+        heroes_action[currentBanIndex] = { id: null, name: null, selected: true };
       }
     }
   } else if (hero) {
     const nullSlotIndex = heroes_action.findIndex(
-      (hero: { name: string; selected?: boolean }) => !hero.selected
+      (hero: { id: string, name: string; selected?: boolean }) => !hero.selected
     );
     if (nullSlotIndex !== -1) {
-      heroes_action[nullSlotIndex] = { name: hero.name, selected: true };
+      heroes_action[nullSlotIndex] = { id: hero.id, name: hero.name, selected: true };
     }
   }
 
@@ -85,7 +89,8 @@ export default async function selectChampion(
     .from("teams")
     .update({
       [actionFunctionMapping[action]]: heroes_action.map(
-        ({ name, selected }: { name: string; selected?: boolean }) => ({
+        ({ id, name, selected }: { id: string, name: string; selected?: boolean }) => ({
+          id,
           name,
           selected,
         })
