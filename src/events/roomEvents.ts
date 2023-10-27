@@ -5,11 +5,11 @@ import { RoomTimerManager } from "../services/RoomTimerManager";
 export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on("joinRoom", async ({ roomid, teamid }) => {
+  socket.on("joinRoom", async ({ roomid }) => {
     socket.join(roomid);
-    console.dir(`User ${socket.id} joined room ${roomid} as Team ${teamid}`);
+    console.dir(`User ${socket.id} joined room ${roomid}`);
 
-    socket.emit("message", `Welcome to room ${roomid}, Team ${teamid}!`);
+    socket.emit("message", `Welcome to room ${roomid}`);
 
     roomTimerManager.initTimer(roomid, io, socket);
 
