@@ -73,6 +73,6 @@ async function assignNumberOfTurn(cycle: number, roomId: string) {
 }
 
 function determineNumberOfTurns(cycle: number): number {
-    const doublePickCycle = [7, 9, 11, 13];
+    const doublePickCycle = [8, 9, 10, 12, 14];
     return doublePickCycle.includes(cycle) ? 2 : 1;
 }
