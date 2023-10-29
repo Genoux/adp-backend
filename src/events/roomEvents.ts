@@ -10,7 +10,7 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     console.dir(`User ${socket.id} joined room ${roomid}`);
 
     socket.emit("message", `Welcome to room ${roomid}`);
-    roomTimerManager.initTimer(roomid, io, socket);
+    roomTimerManager.initTimer(roomid, io);
 
     const { data: room } = await supabase
       .from("rooms")
@@ -24,14 +24,13 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     }
 
     if (room.ready && room.status !== "done") {
-      roomTimerManager.startTimer(roomid);
-
-      // if (room.status === "planning") {
-      //   roomTimerManager.stopTimer(roomid);
-      //   roomTimerManager.startLobbyTimer(roomid);
-      // } else {
-      //   roomTimerManager.startTimer(roomid);
-      // }
+      const timer = roomTimerManager.listTimers()
+     // if(obule[roomid].id === roomid) return
+      if (room.status === "planning") {
+        roomTimerManager.startLobbyTimer(roomid);
+      } else {
+        roomTimerManager.startTimer(roomid);
+      }
     }
   });
 

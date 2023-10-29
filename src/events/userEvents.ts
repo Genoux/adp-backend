@@ -24,10 +24,6 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     const cycle = await updateRoomCycle(roomid);
     await switchTurn(roomid, cycle);
 
-    // if (!switchTurnResult) {
-    //   socket.emit("CHAMPION_SELECTED", switchTurnResult);
-    // }
-
     roomTimerManager.cancelTargetAchieved(roomid);
     roomTimerManager.resetTimer(roomid);
     roomTimerManager.unlockRoomTimer(roomid);
