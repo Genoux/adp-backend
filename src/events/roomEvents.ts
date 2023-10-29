@@ -25,7 +25,11 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     }
 
     if (room.ready && room.status !== "done") {
-      roomTimerManager.startTimer(roomid);
+      if(room.status === "planning") {
+        roomTimerManager.startLobbyTimer(roomid);
+      } else {
+        roomTimerManager.startTimer(roomid);
+      }
     }
   });
 
