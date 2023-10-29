@@ -125,7 +125,10 @@ private async getRoomStatus(roomid: string) {
 
   // Initialize timer
   initTimer(roomid: string, io: Server, socket: Socket) {
-    if (this.roomTimers[roomid]) return;
+    if (this.roomTimers[roomid]) {
+      console.log(`Timer for room ${roomid} already exists. Skipping initialization.`);
+      return;
+    }
 
     const timer = new Timer();
     const timerLobby = new Timer();
@@ -166,8 +169,10 @@ private async getRoomStatus(roomid: string) {
     });
   }
 
-  startTimer(roomid: string) {
+  async startTimer(roomid: string) {
     if (!this.roomTimers[roomid]) return;
+    const run = this.roomTimers[roomid].countdownTimer.isRunning()
+    if(run) return
     this.roomTimers[roomid].countdownTimer.start({
       countdown: true,
       startValues: { seconds: Number(process.env.START_TIME) || 15 },
@@ -179,6 +184,7 @@ private async getRoomStatus(roomid: string) {
       this.roomTimers[roomid].countdownTimer.stop();
       delete this.roomTimers[roomid];
     }
+    return
   }
 
   stopTimer(roomid: string) {
