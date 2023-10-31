@@ -53,18 +53,6 @@ class RoomTimerManager {
     return this.roomTimers;
   }
 
-  public async cleanUpRoomTimers(): Promise<void> {
-    const { data: rooms } = await supabase.from("rooms").select("id");
-    if (!rooms) return;
-    const validRoomIds = new Set(rooms.map(room => room.id));
-    Object.keys(this.roomTimers).forEach(roomId => {
-      if (!validRoomIds.has(roomId)) {
-        console.log(`Deleting timer for room ${roomId}`);
-        this.deleteTimer(roomId);
-      }
-    });
-  }
-
   private addTimerEventListeners(
     timer: Timer,
     roomId: string,
@@ -151,12 +139,6 @@ class RoomTimerManager {
   }
 
   public async startTimer(roomId: string): Promise<void> {
-    // const roomStatus = await this.getRoomStatus(roomId);
-    // if (roomStatus === 'planning') {
-    //   console.log(`Room ${roomId} is in planning status. Skipping main timer start.`);
-    //   return;
-    // }
-
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       this.stopLobbyTimer(roomId); // Ensure the lobby timer is stopped before starting the main timer

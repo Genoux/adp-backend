@@ -24,8 +24,6 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     }
 
     if (room.ready && room.status !== "done") {
-      const timer = roomTimerManager.listTimers()
-     // if(obule[roomid].id === roomid) return
       if (room.status === "planning") {
         roomTimerManager.startLobbyTimer(roomid);
       } else {
@@ -36,15 +34,5 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
 
   socket.on("disconnect", async (reason) => {
     console.log(`User ${socket.id} disconnected because ${reason}`);
-    const teamid = socket.data.teamid;
-
-    const { data: team } = await supabase.from("teams").select("socketid").eq("id", teamid).single();
-    const existingSocketIds = team?.socketid ? JSON.parse(team.socketid) : [];
-
-    const filteredSocketIds = existingSocketIds.filter((id: string) => id !== socket.id);
-    const isConnected = filteredSocketIds.length > 0;
-    const newSocketIds = JSON.stringify(filteredSocketIds);
-
-    await supabase.from("teams").update({ connected: isConnected, socketid: newSocketIds }).eq("id", teamid);
   });
 };
