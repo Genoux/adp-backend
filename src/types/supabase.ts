@@ -42,7 +42,6 @@ export interface Database {
           heroes_pool: Json | null
           id: number
           name: string | null
-          phase: string | null
           ready: boolean | null
           red: number | null
           status: string | null
@@ -55,7 +54,6 @@ export interface Database {
           heroes_pool?: Json | null
           id?: number
           name?: string | null
-          phase?: string | null
           ready?: boolean | null
           red?: number | null
           status?: string | null
@@ -68,7 +66,6 @@ export interface Database {
           heroes_pool?: Json | null
           id?: number
           name?: string | null
-          phase?: string | null
           ready?: boolean | null
           red?: number | null
           status?: string | null
@@ -92,42 +89,51 @@ export interface Database {
       teams: {
         Row: {
           clicked_hero: string | null
-          color: string | null
+          color: string
+          connected: boolean | null
           created_at: string | null
-          heroes_ban: Json | null
-          heroes_selected: Json | null
+          heroes_ban: Json
+          heroes_selected: Json
           id: number
           isturn: boolean | null
-          name: string | null
+          name: string
+          nb_turn: number | null
           ready: boolean | null
-          room: number | null
+          room: number
           selected_hero: string | null
+          socketid: Json | null
         }
         Insert: {
           clicked_hero?: string | null
-          color?: string | null
+          color: string
+          connected?: boolean | null
           created_at?: string | null
-          heroes_ban?: Json | null
-          heroes_selected?: Json | null
+          heroes_ban: Json
+          heroes_selected: Json
           id?: number
           isturn?: boolean | null
-          name?: string | null
+          name: string
+          nb_turn?: number | null
           ready?: boolean | null
-          room?: number | null
+          room: number
           selected_hero?: string | null
+          socketid?: Json | null
         }
         Update: {
           clicked_hero?: string | null
-          color?: string | null
+          color?: string
+          connected?: boolean | null
           created_at?: string | null
-          heroes_ban?: Json | null
-          heroes_selected?: Json | null
+          heroes_ban?: Json
+          heroes_selected?: Json
           id?: number
           isturn?: boolean | null
-          name?: string | null
+          name?: string
+          nb_turn?: number | null
           ready?: boolean | null
-          room?: number | null
+          room?: number
           selected_hero?: string | null
+          socketid?: Json | null
         }
         Relationships: [
           {
@@ -338,4 +344,3 @@ export interface Database {
     }
   }
 }
-

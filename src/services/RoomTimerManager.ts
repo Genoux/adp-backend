@@ -1,9 +1,8 @@
 import { Timer } from "easytimer.js";
 import { Server } from "socket.io";
-import selectChampion from "../utils/champions";
+import { selectChampion } from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
-import { delay } from '../utils/delay';
 import supabase from "../supabase";
 
 interface RoomTimer {
@@ -20,24 +19,15 @@ class RoomTimerManager {
   private static instance: RoomTimerManager;
   private roomTimers: Record<string, RoomTimer> = {};
 
+  private constructor() {
+    // Private constructor to prevent external instantiation and enforce singleton pattern
+  }
+
   public static getInstance(): RoomTimerManager {
     if (!RoomTimerManager.instance) {
       RoomTimerManager.instance = new RoomTimerManager();
     }
     return RoomTimerManager.instance;
-  }
-
-  public async monitorRoomStatus(roomId: string): Promise<void> {
-    let status = await this.getRoomStatus(roomId);
-    while (status !== null && status !== 'done') {
-      await delay(5000);
-      status = await this.getRoomStatus(roomId);
-    }
-    if (status === null || status === 'done') {
-      console.log(`Deleting timer for room ${roomId}`);
-      this.stopTimer(roomId);
-      this.deleteTimer(roomId);
-    }
   }
 
   private async getRoomStatus(roomId: string): Promise<string | null> {
@@ -50,7 +40,7 @@ class RoomTimerManager {
   }
 
   public listTimers(): Record<string, RoomTimer> {
-    return this.roomTimers;
+    return { ...this.roomTimers };
   }
 
   private addTimerEventListeners(
@@ -59,24 +49,26 @@ class RoomTimerManager {
     io: Server,
     onTimerTargetAchieved?: () => Promise<void>,
   ): void {
-    
-    timer.addEventListener("secondsUpdated", () => {
-      const timeValues = timer.getTimeValues();
-      const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(timeValues.seconds).padStart(2, '0')}`;
-      io.to(roomId).emit("TIMER", formattedTime);
-    });
+    timer.addEventListener("secondsUpdated", () => this.handleSecondsUpdated(timer, roomId, io));
+    timer.addEventListener("targetAchieved", () => this.handleTargetAchieved(roomId, onTimerTargetAchieved));
+  }
 
-    timer.addEventListener("targetAchieved", async () => {
-      const roomTimer = this.roomTimers[roomId];
-      if (!roomTimer) return;
+  private handleSecondsUpdated(timer: Timer, roomId: string, io: Server): void {
+    const timeValues = timer.getTimeValues();
+    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(timeValues.seconds).padStart(2, '0')}`;
+    io.to(roomId).emit("TIMER", formattedTime);
+  }
 
-      roomTimer.targetAchievedTimeout = setTimeout(async () => {
-        roomTimer.isTimeUp = true;
-        if (!roomTimer.lock && onTimerTargetAchieved) {
-          await onTimerTargetAchieved();
-        }
-      }, 2000);
-    });
+  private async handleTargetAchieved(roomId: string, onTimerTargetAchieved?: () => Promise<void>): Promise<void> {
+    const roomTimer = this.roomTimers[roomId];
+    if (!roomTimer) return;
+
+    roomTimer.targetAchievedTimeout = setTimeout(async () => {
+      roomTimer.isTimeUp = true;
+      if (!roomTimer.lock && onTimerTargetAchieved) {
+        await onTimerTargetAchieved();
+      }
+    }, 2000);
   }
 
   public hasTimer(roomId: string): boolean {
@@ -84,49 +76,38 @@ class RoomTimerManager {
   }
 
   public initTimer(roomId: string, io: Server): void {
-    if (this.roomTimers[roomId]) {
+
+    if (this.hasTimer(roomId)) {
       console.log(`Timer for room ${roomId} already exists. Skipping initialization.`);
       return;
     }
 
     const timer = new Timer();
     const timerLobby = new Timer();
+    this.roomTimers[roomId] = { countdownTimer: timer, countdownTimerLobby: timerLobby, id: roomId, lock: false, isTimeUp: false };
 
-    this.roomTimers[roomId] = {
-      countdownTimer: timer,
-      countdownTimerLobby: timerLobby,
-      id: roomId,
-      lock: false,
-      isTimeUp: false,
-    };
-
-    this.addTimerEventListeners(this.roomTimers[roomId].countdownTimerLobby, roomId, io, async () => {
-      this.roomTimers[roomId].isTimeUp = false;
-      console.log(`Lobby timer target achieved for room ${roomId}`);
-      await this.startTimer(roomId);
-      await updateRoomCycle(roomId);
-      this.roomTimers[roomId].countdownTimerLobby.stop();
+    this.addTimerEventListeners(timerLobby, roomId, io, async () => {
+      const roomTimer = this.roomTimers[roomId];
+      if (roomTimer) {
+        roomTimer.isTimeUp = false;
+        console.log(`Lobby timer target achieved for room ${roomId}`);
+        await this.startTimer(roomId);
+        await updateRoomCycle(roomId);
+        roomTimer.countdownTimerLobby.stop();
+      }
     });
 
-    this.addTimerEventListeners(this.roomTimers[roomId].countdownTimer, roomId, io, async () => {
+    this.addTimerEventListeners(timer, roomId, io, async () => {
       this.stopTimer(roomId);
       io.to(roomId).emit("CHAMPION_SELECTED", true);
-      await selectChampion(null, roomId, null);
+      await selectChampion(roomId, null);
       const cycle = await updateRoomCycle(roomId);
       await switchTurn(roomId, cycle);
       this.resetTimer(roomId);
     });
-
-    this.monitorRoomStatus(roomId);
   }
 
   public async startLobbyTimer(roomId: string): Promise<void> {
-    const roomStatus = await this.getRoomStatus(roomId);
-    if (roomStatus !== 'planning') {
-      console.log(`Room ${roomId} is not in planning status. Skipping lobby timer start.`);
-      return;
-    }
-
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       this.stopTimer(roomId); // Ensure the main timer is stopped before starting the lobby timer
@@ -155,6 +136,7 @@ class RoomTimerManager {
     if (roomTimer) {
       roomTimer.countdownTimer.stop();
       delete this.roomTimers[roomId];
+      console.log(`Deleting timer for room ${roomId}`);
     }
   }
 
@@ -213,7 +195,6 @@ class RoomTimerManager {
     if (roomTimer && roomTimer.targetAchievedTimeout) {
       clearTimeout(roomTimer.targetAchievedTimeout);
       roomTimer.isTimeUp = false;  // Reset the time-up flag if necessary
-      console.log(`Target achieved cancelled for room ${roomId}`);
     }
   }
 }

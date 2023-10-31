@@ -18,12 +18,11 @@ const actionFunctionMapping = {
   select: "heroes_selected",
 };
 
-export default async function selectChampion(
-  teamid: string | null,
+async function selectChampion(
   roomid: string,
   selectedChampion: string | null
 ) {
-  const { data: team, error: teamFetchError  } = await supabase
+  const { data: team } = await supabase
     .from("teams")
     .select(
       "id, isturn, heroes_selected, heroes_ban, clicked_hero, nb_turn"
@@ -112,3 +111,5 @@ function getRandomUnselectedHero(heroes_pool: Hero[]): Hero | undefined {
   const randomIndex = Math.floor(Math.random() * unselectedHeroes.length);
   return unselectedHeroes[randomIndex];
 }
+
+export { selectChampion }

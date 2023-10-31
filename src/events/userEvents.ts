@@ -1,62 +1,98 @@
 import { Server, Socket } from "socket.io";
 import supabase from "../supabase";
-import selectChampion from "../utils/champions";
+import { selectChampion } from "../utils/champions";
 import { updateRoomCycle } from "../utils/roomCycle";
 import { switchTurn } from "../utils/switchTeam";
 import { RoomTimerManager } from '../services/RoomTimerManager';
 
+interface SelectChampionMessage {
+  teamid: string;
+  roomid: string;
+  selectedChampion: string;
+}
+
+interface RoomMessage {
+  roomid: string;
+}
+
+interface TeamReadyMessage {
+  roomid: string;
+  teamid: string;
+}
+
+const EVENTS = {
+  SELECT_CHAMPION: "SELECT_CHAMPION",
+  RESET_TIMER: "RESET_TIMER",
+  STOP_TIMER: "STOP_TIMER",
+  START_TIMER: "START_TIMER",
+  TEAM_READY: "TEAM_READY",
+  TIMER_RESET: "TIMER_RESET",
+};
+
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on("SELECT_CHAMPION", async ({ teamid, roomid, selectedChampion }) => {
+  socket.on(EVENTS.SELECT_CHAMPION, handleSelectChampion);
+  socket.on(EVENTS.RESET_TIMER, handleResetTimer);
+  socket.on(EVENTS.STOP_TIMER, handleStopTimer);
+  socket.on(EVENTS.START_TIMER, handleStartTimer);
+  socket.on(EVENTS.TEAM_READY, handleTeamReady);
+
+  async function handleSelectChampion({ roomid, selectedChampion }: SelectChampionMessage) {
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
       return;
     }
     roomTimerManager.lockRoomTimer(roomid);
 
-    await selectChampion(teamid, roomid, selectedChampion);
-    handleTurn(roomid, io, socket);
-
-  });
-
-  async function handleTurn(roomid: string, io: Server, socket: Socket) {
-    const cycle = await updateRoomCycle(roomid);
-    await switchTurn(roomid, cycle);
-
-    roomTimerManager.cancelTargetAchieved(roomid);
-    roomTimerManager.resetTimer(roomid);
-    roomTimerManager.unlockRoomTimer(roomid);
-    socket.to(roomid).emit("TIMER_RESET", true);
+    await selectChampion(roomid, selectedChampion);
+    await handleTurn(roomid);
   }
 
-  socket.on("RESET_TIMER", ({ roomid }) => {
-    roomTimerManager.resetTimer(roomid);
-  });
+  async function handleTurn(roomid: string) {
+    const cycle = await updateRoomCycle(roomid);
+    const turnSwitched = await switchTurn(roomid, cycle);
 
-  socket.on("STOP_TIMER", ({ roomid }) => {
-    roomTimerManager.stopTimer(roomid);
-  });
-
-  socket.on("START_TIMER", ({ roomid }) => {
-    roomTimerManager.startTimer(roomid);
-  });
-
-  socket.on("TEAM_READY", async ({ roomid, teamid }) => {
-    const { data: teams } = await supabase
-      .from("teams")
-      .select("*")
-      .eq("room", roomid);
-
-    if (!teams) return;
-
-    console.log(`Team ${teamid} is ready!`);
-
-    if (teams.every((team) => team.ready)) {
-      await supabase.from("rooms").update({ ready: true, status: 'planning' }).eq("id", roomid);
-      console.log(`Room ${roomid} is ready!`);
-      await updateRoomCycle(roomid);
-      roomTimerManager.startLobbyTimer(roomid);
+    if (turnSwitched) {
+      roomTimerManager.cancelTargetAchieved(roomid);
+      roomTimerManager.resetTimer(roomid);
+      roomTimerManager.unlockRoomTimer(roomid);
+      io.to(roomid).emit(EVENTS.TIMER_RESET, true);
     }
-  });
+  }
+
+  function handleResetTimer({ roomid }: RoomMessage) {
+    roomTimerManager.resetTimer(roomid);
+  }
+
+  function handleStopTimer({ roomid }: RoomMessage) {
+    roomTimerManager.stopTimer(roomid);
+  }
+
+  function handleStartTimer({ roomid }: RoomMessage) {
+    roomTimerManager.startTimer(roomid);
+  }
+
+  async function handleTeamReady({ roomid, teamid }: TeamReadyMessage) {
+    try {
+      const { data: teams, error } = await supabase
+        .from("teams")
+        .select("id, ready")
+        .eq("room", roomid);
+
+      if (error) throw error;
+      if (!teams) return;
+
+      console.log(`Team ${teamid} is ready!`);
+
+      if (teams.every((team) => team.ready)) {
+        await supabase.from("rooms").update({ ready: true, status: 'planning' }).eq("id", roomid);
+        console.log(`Room ${roomid} is ready!`);
+        await updateRoomCycle(roomid);
+        roomTimerManager.startLobbyTimer(roomid);
+      }
+    } catch (error) {
+      console.error("Error in handleTeamReady:", error);
+    }
+  }
 };
