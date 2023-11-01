@@ -51,6 +51,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
 
   async function handleTurn(roomid: string) {
     const cycle = await updateRoomCycle(roomid);
+    if(!cycle) return;
     const turnSwitched = await switchTurn(roomid, cycle);
 
     if (turnSwitched) {

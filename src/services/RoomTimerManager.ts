@@ -102,6 +102,7 @@ class RoomTimerManager {
       io.to(roomId).emit("CHAMPION_SELECTED", true);
       await selectChampion(roomId, null);
       const cycle = await updateRoomCycle(roomId);
+      if(!cycle) return;
       await switchTurn(roomId, cycle);
       this.resetTimer(roomId);
     });

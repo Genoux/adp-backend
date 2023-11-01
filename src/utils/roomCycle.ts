@@ -7,12 +7,7 @@ const RoomStatus = {
   DONE: 'done'
 };
 
-/**
- * Updates the room cycle and status based on the current cycle.
- * @param {string} roomId - The ID of the room to update.
- * @returns {Promise<number | undefined>} The previous cycle number, or undefined if an error occurred.
- */
-export async function updateRoomCycle(roomId: string) {
+export async function updateRoomCycle(roomId: string): Promise<number | undefined> {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   const { data: room, error: fetchError } = await supabase
