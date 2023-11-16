@@ -9,7 +9,7 @@ const RoomStatus = {
 
 export async function updateRoomCycle(roomId: string): Promise<number | undefined> {
   const roomTimerManager = RoomTimerManager.getInstance();
-
+  const defaultCycle = 0;
   const { data: room, error: fetchError } = await supabase
     .from("rooms")
     .select("*")
@@ -18,12 +18,12 @@ export async function updateRoomCycle(roomId: string): Promise<number | undefine
 
   if (fetchError || !room) {
     console.error('Error fetching room:', fetchError);
-    return;
+    return defaultCycle;
   }
 
   if (room.status === RoomStatus.DONE) {
     roomTimerManager.deleteTimer(roomId);
-    return;
+    return defaultCycle;
   }
 
   const { cycle: currentCycle, status } = room;
@@ -40,7 +40,7 @@ export async function updateRoomCycle(roomId: string): Promise<number | undefine
 
   if (updateError) {
     console.error('Error updating room:', updateError);
-    return;
+    return currentCycle || defaultCycle;
   }
 
   return currentCycle;

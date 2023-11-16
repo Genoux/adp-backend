@@ -49,11 +49,19 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     await handleTurn(roomid);
   }
 
+  function delay(milliseconds : number) {
+    return new Promise(resolve => setTimeout(resolve, milliseconds));
+  }
+  
+
   async function handleTurn(roomid: string) {
     const cycle = await updateRoomCycle(roomid);
-    if(!cycle) return;
-    const turnSwitched = await switchTurn(roomid, cycle);
+    if (!cycle) return;
+    
+    const milliseconds = cycle < 7 ? 0 : 1000;
+    await delay(milliseconds);
 
+    const turnSwitched = await switchTurn(roomid, cycle);
     if (turnSwitched) {
       roomTimerManager.cancelTargetAchieved(roomid);
       roomTimerManager.resetTimer(roomid);
