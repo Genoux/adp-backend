@@ -1,19 +1,21 @@
-import supabase from "../supabase";
 import { RoomTimerManager } from '../services/RoomTimerManager';
+import supabase from '../supabase';
 
 const RoomStatus = {
   BAN: 'ban',
   SELECT: 'select',
-  DONE: 'done'
+  DONE: 'done',
 };
 
-export async function updateRoomCycle(roomId: string): Promise<number | undefined> {
+export async function updateRoomCycle(
+  roomId: string
+): Promise<number | undefined> {
   const roomTimerManager = RoomTimerManager.getInstance();
   const defaultCycle = 0;
   const { data: room, error: fetchError } = await supabase
-    .from("rooms")
-    .select("*")
-    .eq("id", roomId)
+    .from('rooms')
+    .select('*')
+    .eq('id', roomId)
     .single();
 
   if (fetchError || !room) {

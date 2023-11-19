@@ -1,9 +1,9 @@
-import { Timer } from "easytimer.js";
-import { Server } from "socket.io";
-import { selectChampion } from "../utils/champions";
-import { updateRoomCycle } from "../utils/roomCycle";
-import { switchTurn } from "../utils/switchTeam";
-import supabase from "../supabase";
+import { Timer } from 'easytimer.js';
+import { Server } from 'socket.io';
+import supabase from '../supabase';
+import { selectChampion } from '../utils/champions';
+import { updateRoomCycle } from '../utils/roomCycle';
+import { switchTurn } from '../utils/switchTeam';
 
 interface RoomTimer {
   countdownTimer: Timer;
@@ -47,19 +47,29 @@ class RoomTimerManager {
     timer: Timer,
     roomId: string,
     io: Server,
-    onTimerTargetAchieved?: () => Promise<void>,
+    onTimerTargetAchieved?: () => Promise<void>
   ): void {
-    timer.addEventListener("secondsUpdated", () => this.handleSecondsUpdated(timer, roomId, io));
-    timer.addEventListener("targetAchieved", () => this.handleTargetAchieved(roomId, onTimerTargetAchieved));
+    timer.addEventListener('secondsUpdated', () =>
+      this.handleSecondsUpdated(timer, roomId, io)
+    );
+    timer.addEventListener('targetAchieved', () =>
+      this.handleTargetAchieved(roomId, onTimerTargetAchieved)
+    );
   }
 
   private handleSecondsUpdated(timer: Timer, roomId: string, io: Server): void {
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(timeValues.seconds).padStart(2, '0')}`;
-    io.to(roomId).emit("TIMER", formattedTime);
+    const formattedTime = `${String(timeValues.minutes).padStart(
+      2,
+      '0'
+    )}:${String(timeValues.seconds).padStart(2, '0')}`;
+    io.to(roomId).emit('TIMER', formattedTime);
   }
 
-  private async handleTargetAchieved(roomId: string, onTimerTargetAchieved?: () => Promise<void>): Promise<void> {
+  private async handleTargetAchieved(
+    roomId: string,
+    onTimerTargetAchieved?: () => Promise<void>
+  ): Promise<void> {
     const roomTimer = this.roomTimers[roomId];
     if (!roomTimer) return;
 
@@ -76,15 +86,22 @@ class RoomTimerManager {
   }
 
   public initTimer(roomId: string, io: Server): void {
-
     if (this.hasTimer(roomId)) {
-      console.log(`Timer for room ${roomId} already exists. Skipping initialization.`);
+      console.log(
+        `Timer for room ${roomId} already exists. Skipping initialization.`
+      );
       return;
     }
 
     const timer = new Timer();
     const timerLobby = new Timer();
-    this.roomTimers[roomId] = { countdownTimer: timer, countdownTimerLobby: timerLobby, id: roomId, lock: false, isTimeUp: false };
+    this.roomTimers[roomId] = {
+      countdownTimer: timer,
+      countdownTimerLobby: timerLobby,
+      id: roomId,
+      lock: false,
+      isTimeUp: false,
+    };
 
     this.addTimerEventListeners(timerLobby, roomId, io, async () => {
       const roomTimer = this.roomTimers[roomId];
@@ -99,10 +116,10 @@ class RoomTimerManager {
 
     this.addTimerEventListeners(timer, roomId, io, async () => {
       this.stopTimer(roomId);
-      io.to(roomId).emit("CHAMPION_SELECTED", true);
+      io.to(roomId).emit('CHAMPION_SELECTED', true);
       await selectChampion(roomId, null);
       const cycle = await updateRoomCycle(roomId);
-      if(!cycle) return;
+      if (!cycle) return;
       await switchTurn(roomId, cycle);
       this.resetTimer(roomId);
     });
@@ -175,7 +192,7 @@ class RoomTimerManager {
       roomTimer.lock = true;
     }
   }
-  
+
   public unlockRoomTimer(roomId: string): void {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
@@ -195,7 +212,7 @@ class RoomTimerManager {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer && roomTimer.targetAchievedTimeout) {
       clearTimeout(roomTimer.targetAchievedTimeout);
-      roomTimer.isTimeUp = false;  // Reset the time-up flag if necessary
+      roomTimer.isTimeUp = false; // Reset the time-up flag if necessary
     }
   }
 }
