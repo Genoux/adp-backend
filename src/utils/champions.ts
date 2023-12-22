@@ -55,10 +55,14 @@ async function selectChampion(roomid: string, selectedChampion: string | null) {
   const heroesAction =
     action === 'ban' ? team.heroes_ban : team.heroes_selected;
 
+  // Use clicked_hero only during 'select' phase
+  if (action === 'select' && !selectedChampion && team.clicked_hero !== null) {
+    selectedChampion = team.clicked_hero;
+  }
+
   // Update clicked_hero to null right after retrieving the data
   await supabase.from('teams').update({ clicked_hero: null }).eq('id', team.id);
 
-  // If action is 'select' and no champion is selected, pick a random one
   const hero = selectedChampion
     ? getHeroFromPool(room.heroes_pool, selectedChampion)
     : action === 'select'
