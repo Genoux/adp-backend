@@ -15,7 +15,11 @@ const getHeroFromPool = (heroes_pool: Hero[], heroName: string | null) => {
   const hero = heroName
     ? heroes_pool.find((h) => h.name === heroName)
     : undefined;
-  if (hero?.selected) throw new Error('Hero already selected');
+  if (hero?.selected) {
+    console.log("Hero already selected, returning random hero");
+    const r_her = getRandomUnselectedHero(heroes_pool);
+    return r_her
+  }
   return hero;
 };
 
