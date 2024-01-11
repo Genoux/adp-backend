@@ -42,14 +42,16 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     roomid,
     selectedChampion,
   }: SelectChampionMessage) {
+    console.log("handleUserEvents - roomid:", roomid);
+    console.log("handleUserEvents - selectedChampion:", selectedChampion);
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
       return;
     }
     roomTimerManager.lockRoomTimer(roomid);
-
     await selectChampion(roomid, selectedChampion);
     await handleTurn(roomid);
+    //io.to(roomid.toString()).emit('CHAMPION_SELECTED', true);
   }
 
   function delay(milliseconds: number) {
@@ -60,7 +62,6 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     const cycle = await updateRoomCycle(roomid);
     if (!cycle) return;
 
-    //const milliseconds = cycle < 7 ? 1000 : 1000;
     await delay(1000);
 
     const turnSwitched = await switchTurn(roomid, cycle);
@@ -69,6 +70,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
       roomTimerManager.resetTimer(roomid);
       roomTimerManager.unlockRoomTimer(roomid);
       io.to(roomid).emit(EVENTS.TIMER_RESET, true);
+      await supabase.from('teams').update({ clicked_hero: null }).eq('room', roomid);
     }
   }
 

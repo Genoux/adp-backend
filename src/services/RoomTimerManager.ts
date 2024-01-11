@@ -116,7 +116,6 @@ class RoomTimerManager {
 
     this.addTimerEventListeners(timer, roomId, io, async () => {
       this.stopTimer(roomId);
-      io.to(roomId).emit('CHAMPION_SELECTED', true);
       await selectChampion(roomId, null);
       const cycle = await updateRoomCycle(roomId);
       if (!cycle) return;
