@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { RoomTimerManager } from '../services/RoomTimerManager';
+import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 import { selectChampion } from '../utils/champions';
 import { updateRoomCycle } from '../utils/roomCycle';

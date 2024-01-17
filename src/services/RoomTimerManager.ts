@@ -19,10 +19,6 @@ class RoomTimerManager {
   private static instance: RoomTimerManager;
   private roomTimers: Record<string, RoomTimer> = {};
 
-  private constructor() {
-    // Private constructor to prevent external instantiation and enforce singleton pattern
-  }
-
   public static getInstance(): RoomTimerManager {
     if (!RoomTimerManager.instance) {
       RoomTimerManager.instance = new RoomTimerManager();
@@ -30,17 +26,14 @@ class RoomTimerManager {
     return RoomTimerManager.instance;
   }
 
-  private async getRoomStatus(roomId: string): Promise<string | null> {
-    const { data: room } = await supabase
-      .from('rooms')
-      .select('status')
-      .eq('id', roomId)
-      .single();
-    return room ? room.status : null;
-  }
-
   public listTimers(): Record<string, RoomTimer> {
     return { ...this.roomTimers };
+  }
+
+  public deleteTimer(roomId: string): void {
+    if (this.hasTimer(roomId)) {
+      delete this.roomTimers[roomId];
+    }
   }
 
   private addTimerEventListeners(
@@ -132,57 +125,7 @@ class RoomTimerManager {
         countdown: true,
         startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 },
       });
-      console.log(`Lobby timer started for room ${roomId}`);
     }
-  }
-
-  public async startTimer(roomId: string): Promise<void> {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      this.stopLobbyTimer(roomId); // Ensure the lobby timer is stopped before starting the main timer
-      roomTimer.countdownTimer.start({
-        countdown: true,
-        startValues: { seconds: Number(process.env.START_TIME) || 15 },
-      });
-      console.log(`Main timer started for room ${roomId}`);
-    }
-  }
-
-  public deleteTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.stop();
-      delete this.roomTimers[roomId];
-      console.log(`Deleting timer for room ${roomId}`);
-    }
-  }
-
-  public stopTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.stop();
-    }
-  }
-
-  public stopLobbyTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimerLobby.stop();
-      console.log(`Lobby timer stopped for room ${roomId}`);
-    }
-  }
-
-  public resetTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.reset();
-      roomTimer.isTimeUp = false;
-    }
-  }
-
-  public isTimeUp(roomId: string): boolean {
-    const roomTimer = this.roomTimers[roomId];
-    return roomTimer ? roomTimer.isTimeUp : false;
   }
 
   public lockRoomTimer(roomId: string): void {
@@ -199,21 +142,41 @@ class RoomTimerManager {
     }
   }
 
-  public cancelServerSelection(roomId: string): void {
-    console.log('cancelServerSelection - roomId:', roomId);
+  public isTimeUp(roomId: string): boolean {
     const roomTimer = this.roomTimers[roomId];
-    if (roomTimer?.timerId) {
-      clearTimeout(roomTimer.timerId);
-    }
+    return roomTimer ? roomTimer.isTimeUp : false;
   }
 
   public cancelTargetAchieved(roomId: string): void {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer && roomTimer.targetAchievedTimeout) {
       clearTimeout(roomTimer.targetAchievedTimeout);
-      roomTimer.isTimeUp = false; // Reset the time-up flag if necessary
+    }
+  }
+
+  public resetTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.reset();
+    }
+  }
+
+  public stopTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.stop();
+    }
+  }
+
+  public startTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.start({
+        countdown: true,
+        startValues: { seconds: Number(process.env.START_TIME) || 30 },
+      });
     }
   }
 }
 
-export { RoomTimerManager };
+export default RoomTimerManager;
