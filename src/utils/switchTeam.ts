@@ -1,54 +1,124 @@
-import supabase from "../supabase";
+import RoomTimerManager from '../services/RoomTimerManager';
+import supabase from '../supabase';
 
-export async function switchTurn(roomId: string, roomCycle: number) {
+type Team = {
+  id: number;
+  isturn: boolean;
+  nb_turn: number;
+  clicked_hero: string | null;
+  room: string;
+};
+
+export async function switchTurn(
+  roomId: string,
+  roomCycle: number
+): Promise<{ status: boolean; message?: string }> {
   if (!roomCycle) {
-    console.error("Room cycle not available");
-    return;
+    console.error('Room cycle not available');
+    return { status: false, message: 'Room cycle not available' };
   }
 
-  const { data: teams, error: teamFetchError } = await supabase
-    .from("teams")
-    .select("*")
-    .eq("room", roomId);
+  const teams = await fetchTeams(roomId);
+  if (!teams || teams.length === 0)
+    return { status: false, message: 'No teams found' };
 
-  if (teamFetchError || !teams || teams.length === 0) {
-    console.error("Error fetching teams or no teams found:", teamFetchError);
-    return "No teams found";
+  const currentTeam = teams.find((team) => team.isturn);
+  if (!currentTeam) {
+    return { status: false, message: 'No team currently has the turn' };
   }
 
-  //resetTimer(roomId);
+  const shouldSwitch = await shouldSwitchTurn(currentTeam, roomCycle);
+  if (!shouldSwitch) return { status: false };
 
-  const value = shouldSwitchTurn(roomCycle);
-
-  if (!value) {
-    return false;
-  } else if (value === "done") {
-    // set room status to done
-    await supabase.from("rooms").update({ status: "done" }).eq("id", roomId);
-
-    await supabase.from("teams").update({ isturn: false }).eq("room", roomId);
-
-    return "done";
+  if (shouldSwitch === 'done') {
+    await setRoomStatusToDone(roomId);
+    return { status: true, message: 'done' };
   }
 
-  const updatePromises = teams.map((team: any) =>
-    supabase.from("teams").update({ isturn: !team.isturn, clicked_hero: null }).eq("id", team.id)
-  );
+  await toggleTeamsTurn(teams);
+  await assignNumberOfTurn(roomCycle + 1, roomId);
 
-  await Promise.all(updatePromises);
-
-  return true;
+  return { status: true };
 }
 
-//TODO: ADD BANNING CYCLE 1-B 2-R 3-B 4-R 5-B 6-R, then regula cycle so B-7 R-8 R-9 B-10 B-11 R-12 R-13 B-14 B-15 R-16
-function shouldSwitchTurn(cycle: number) {
-  const switchTurns = [1, 2, 3, 4, 5, 6, 7, 9, 11, 13, 15];
+async function fetchTeams(roomId: string): Promise<Team[] | null> {
+  const { data, error } = await supabase
+    .from('teams')
+    .select('id, isturn, nb_turn, clicked_hero')
+    .eq('room', roomId);
 
-  if (switchTurns.includes(cycle)) {
-    return true; // Switch turns
-  } else if (cycle >= 16) {
-    return "done"; // All rounds completed
-  } else {
-    return false; // Continue with the same team's turn
+  if (error) {
+    console.error('Error fetching teams:', error);
+    return null;
   }
+
+  return (data as Team[]) || null;
+}
+
+async function shouldSwitchTurn(
+  team: Team,
+  cycle: number
+): Promise<boolean | 'done'> {
+  if (cycle >= 16) return 'done'; // Game is done if cycle is 16 or more
+  if (team.nb_turn > 0) return false; // If the current team still has turns left, don't switch
+  return true; // Switch turns by default if the current team has no turns left
+}
+
+async function setRoomStatusToDone(roomId: string) {
+  try {
+    // Immediately update teams' isturn status to false
+    await supabase.from('teams').update({ isturn: false }).eq('room', roomId);
+
+    // Delete the timer immediately
+    RoomTimerManager.getInstance().deleteTimer(roomId);
+    console.log(`Room ${roomId} is done. Timer deleted.`);
+
+    // Wait for 20 seconds before updating the room's status to "done"
+    setTimeout(async () => {
+      try {
+        // Update room status to "done"
+        await supabase
+          .from('rooms')
+          .update({ status: 'done' })
+          .eq('id', roomId);
+        console.log(`Room ${roomId} status updated to done.`);
+      } catch (error) {
+        console.error('Error updating room status to done:', error);
+      }
+    }, 2000);
+  } catch (error) {
+    console.error(
+      'Error setting room status to done and deleting timer:',
+      error
+    );
+  }
+}
+
+async function toggleTeamsTurn(teams: Team[]) {
+  const updatePromises = teams.map((team) =>
+    supabase
+      .from('teams')
+      .update({ isturn: !team.isturn, clicked_hero: null })
+      .eq('id', team.id)
+  );
+  await Promise.all(updatePromises);
+}
+
+async function assignNumberOfTurn(cycle: number, roomId: string) {
+  const nb_turn = determineNumberOfTurns(cycle);
+
+  const { error } = await supabase
+    .from('teams')
+    .update({ nb_turn })
+    .eq('room', roomId)
+    .eq('isturn', true);
+
+  if (error) {
+    console.error('Error updating number of turns:', error);
+  }
+}
+
+function determineNumberOfTurns(cycle: number): number {
+  const doublePickCycle = [8, 9, 10, 12, 14];
+  return doublePickCycle.includes(cycle) ? 2 : 1;
 }
