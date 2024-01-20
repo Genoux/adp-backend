@@ -44,12 +44,14 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
   }: SelectChampionMessage) {
     console.log("handleUserEvents - roomid:", roomid);
     console.log("handleUserEvents - selectedChampion:", selectedChampion);
-    if (!roomTimerManager.isTimeUp(roomid)) {
-      roomTimerManager.lockRoomTimer(roomid);
-      await selectChampion(roomid, selectedChampion);
+    io.to(roomid.toString()).emit('CHAMPION_SELECTED', true);
+    if (roomTimerManager.isTimeUp(roomid)) {
+      console.log('Cannot select champion, time is up.');
+      //return;
     }
+    roomTimerManager.lockRoomTimer(roomid);
+    await selectChampion(roomid, selectedChampion);
     await handleTurn(roomid);
-    //io.to(roomid.toString()).emit('CHAMPION_SELECTED', true);
   }
 
   function delay(milliseconds: number) {
