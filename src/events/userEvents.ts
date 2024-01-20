@@ -46,7 +46,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     console.log("handleUserEvents - selectedChampion:", selectedChampion);
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
-      return;
+      //return;
     }
     roomTimerManager.lockRoomTimer(roomid);
     await selectChampion(roomid, selectedChampion);
