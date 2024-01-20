@@ -46,7 +46,7 @@ class RoomTimerManager {
       this.handleSecondsUpdated(timer, roomId, io)
     );
     timer.addEventListener('targetAchieved', () =>
-      this.handleTargetAchieved(roomId, onTimerTargetAchieved)
+      this.handleTargetAchieved(roomId, onTimerTargetAchieved, io)
     );
   }
 
@@ -61,12 +61,14 @@ class RoomTimerManager {
 
   private async handleTargetAchieved(
     roomId: string,
-    onTimerTargetAchieved?: () => Promise<void>
+    onTimerTargetAchieved?: () => Promise<void>,
+    io?: Server
   ): Promise<void> {
     const roomTimer = this.roomTimers[roomId];
     if (!roomTimer) return;
-
+    
     roomTimer.targetAchievedTimeout = setTimeout(async () => {
+      io?.to(roomId.toString()).emit('TIMER_FALSE', true);
       roomTimer.isTimeUp = true;
       if (!roomTimer.lock && onTimerTargetAchieved) {
         await onTimerTargetAchieved();

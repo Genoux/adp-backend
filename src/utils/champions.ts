@@ -65,6 +65,10 @@ async function selectChampion(roomid: string, selectedChampion: string | null) {
   }
 
   // Update clicked_hero to null right after retrieving the data
+  await supabase
+    .from('teams')
+    .update({ clicked_hero: null })
+    .eq('id', team.id);
 
   const hero = selectedChampion
     ? getHeroFromPool(room.heroes_pool, selectedChampion)
