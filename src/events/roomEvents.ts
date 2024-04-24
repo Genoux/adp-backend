@@ -15,7 +15,8 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       .single();
 
     if (!room) {
-      console.log(`Room ${roomid} does not exist. Timer not started.`);
+      console.log(`Room ${roomid} does not exist. Deleting timer if it exists.`);
+      roomTimerManager.deleteTimer(roomid);
       return;
     }
 
@@ -26,6 +27,9 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       roomTimerManager.deleteTimer(roomid);
       return;
     }
+
+    const timers = roomTimerManager.listTimers();
+    console.log('Timers:', timers);
 
     console.log(`User ${socket.id} joined room ${roomid}`);
     socket.emit('message', `Welcome to room ${roomid}`);
