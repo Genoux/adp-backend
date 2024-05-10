@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { RoomTimerManager } from '../services/RoomTimerManager';
+import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 import { selectChampion } from '../utils/champions';
 import { updateRoomCycle } from '../utils/roomCycle';
@@ -46,12 +46,11 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     console.log("handleUserEvents - selectedChampion:", selectedChampion);
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
-      return;
+      //return;
     }
     roomTimerManager.lockRoomTimer(roomid);
     await selectChampion(roomid, selectedChampion);
     await handleTurn(roomid);
-    //io.to(roomid.toString()).emit('CHAMPION_SELECTED', true);
   }
 
   function delay(milliseconds: number) {

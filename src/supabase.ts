@@ -6,6 +6,10 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, { db: { schema: 'aram_draft_pick' } });
+
+if (supabase) {
+  console.log('Supabase client created successfully');
+}
 
 export default supabase;

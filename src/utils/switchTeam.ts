@@ -1,4 +1,4 @@
-import { RoomTimerManager } from '../services/RoomTimerManager';
+import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 
 type Team = {
@@ -24,7 +24,6 @@ export async function switchTurn(
 
   const currentTeam = teams.find((team) => team.isturn);
   if (!currentTeam) {
-    console.error('No team currently has the turn');
     return { status: false, message: 'No team currently has the turn' };
   }
 
