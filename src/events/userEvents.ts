@@ -1,10 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
-import { selectChampion } from '../utils/champions';
-import { updateRoomCycle } from '../utils/roomCycle';
-import { switchTurn } from '../utils/switchTeam';
-
+import { handlePhase } from '../utils/actions/turnHandler';
+import { EndUserTurn } from '../utils';
 interface SelectChampionMessage {
   teamid: string;
   roomid: string;
@@ -32,60 +30,38 @@ const EVENTS = {
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on(EVENTS.SELECT_CHAMPION, handleSelectChampion);
-  socket.on(EVENTS.RESET_TIMER, handleResetTimer);
-  socket.on(EVENTS.STOP_TIMER, handleStopTimer);
-  socket.on(EVENTS.START_TIMER, handleStartTimer);
-  socket.on(EVENTS.TEAM_READY, handleTeamReady);
-
-  async function handleSelectChampion({
-    roomid,
-    selectedChampion,
-  }: SelectChampionMessage) {
+  socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid, selectedChampion }: SelectChampionMessage) => {
     console.log("handleUserEvents - roomid:", roomid);
+      console.log("socket.on - roomTimerManager.isTimeUp(roomid):", roomTimerManager.isTimeUp(roomid));
     console.log("handleUserEvents - selectedChampion:", selectedChampion);
+
     if (roomTimerManager.isTimeUp(roomid)) {
       console.log('Cannot select champion, time is up.');
-      //return;
+     // return;
     }
-    roomTimerManager.lockRoomTimer(roomid);
-    await selectChampion(roomid, selectedChampion);
-    await handleTurn(roomid);
-  }
+    EndUserTurn(roomid, io, roomTimerManager, true);
+    // roomTimerManager.lockRoomTimer(roomid);
+    // roomTimerManager.stopTimer(roomid);
+    // await selectChampion(roomid);
+    // await handleTurn(roomid, io, roomTimerManager);
+    // io.to(roomid).emit('TIMER_RESET', true);
+    // await supabase.from('teams').update({ clicked_hero: null }).eq('room', roomid);
+    // roomTimerManager.resetTimer(roomid);
+  });
 
-  function delay(milliseconds: number) {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds));
-  }
+  socket.on(EVENTS.RESET_TIMER, ({ roomid }: RoomMessage) => {
+    //roomTimerManager.resetTimer(roomid);
+  });
 
-  async function handleTurn(roomid: string) {
-    const cycle = await updateRoomCycle(roomid);
-    if (!cycle) return;
+  socket.on(EVENTS.STOP_TIMER, ({ roomid }: RoomMessage) => {
+    //roomTimerManager.stopTimer(roomid);
+  });
 
-    await delay(1000);
-
-    const turnSwitched = await switchTurn(roomid, cycle);
-    if (turnSwitched) {
-      roomTimerManager.cancelTargetAchieved(roomid);
-      roomTimerManager.resetTimer(roomid);
-      roomTimerManager.unlockRoomTimer(roomid);
-      io.to(roomid).emit(EVENTS.TIMER_RESET, true);
-      await supabase.from('teams').update({ clicked_hero: null }).eq('room', roomid);
-    }
-  }
-
-  function handleResetTimer({ roomid }: RoomMessage) {
-    roomTimerManager.resetTimer(roomid);
-  }
-
-  function handleStopTimer({ roomid }: RoomMessage) {
-    roomTimerManager.stopTimer(roomid);
-  }
-
-  function handleStartTimer({ roomid }: RoomMessage) {
+  socket.on(EVENTS.START_TIMER, ({ roomid }: RoomMessage) => {
     roomTimerManager.startTimer(roomid);
-  }
+  });
 
-  async function handleTeamReady({ roomid, teamid }: TeamReadyMessage) {
+  socket.on(EVENTS.TEAM_READY, async ({ roomid, teamid }: TeamReadyMessage) => {
     try {
       const { data: teams, error } = await supabase
         .from('teams')
@@ -103,11 +79,12 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
           .update({ ready: true, status: 'planning' })
           .eq('id', roomid);
         console.log(`Room ${roomid} is ready!`);
-        await updateRoomCycle(roomid);
-        roomTimerManager.startLobbyTimer(roomid);
+       //await updateRoomCycle(roomid);
+        await handlePhase(roomid, io, RoomTimerManager.getInstance());
+        //roomTimerManager.startLobbyTimer(roomid);
       }
     } catch (error) {
       console.error('Error in handleTeamReady:', error);
     }
-  }
+  });
 };
