@@ -10,19 +10,16 @@ const sleep = (milliseconds: number) => {
 };
 
 const EndActionTrigger = async (roomId: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean) => {
-  if (roomTimerManager.isLocked(roomId)) {
-    console.log(`EndActionTrigger already in progress for room ${roomId}`);
-    return;
-  }
-
-  roomTimerManager.lockRoom(roomId);
   roomTimerManager.cancelTargetAchieved(roomId);
+  if (roomTimerManager.isLocked(roomId)) return;
+  
+  roomTimerManager.lockRoom(roomId);
   roomTimerManager.stopTimer(roomId);
-  await supabase.from('teams').update({ canSelect: false }).eq('room', roomId);
   
   try {
-    const { data: room, error } = await supabase.from('rooms').select('status, cycle').eq('id', roomId).single();
+    await supabase.from('teams').update({ canSelect: false }).eq('room', roomId);
 
+    const { data: room, error } = await supabase.from('rooms').select('status, cycle').eq('id', roomId).single();
     if (error) {
       console.error('Error fetching room data:', error);
       return;
@@ -32,7 +29,7 @@ const EndActionTrigger = async (roomId: string, roomTimerManager: RoomTimerManag
       return;
     }
 
-    await sleep(2000);
+    await sleep(500);
 
     if (room.status === 'ban') {
       await banChampion(roomId, userTrigger);
@@ -43,18 +40,18 @@ const EndActionTrigger = async (roomId: string, roomTimerManager: RoomTimerManag
     await supabase.from('teams').update({ isturn: false, nb_turn: 0, clicked_hero: null }).eq('room', roomId);
 
     const turn = await updateTurn(roomId);
-    console.log("EndActionTrigger - turn:", turn);
-    if (turn === undefined) {
+
+    if (turn === 'done') {
       await sleep(3000);
       await setDonePhase(roomId);
       return;
     }
 
+    roomTimerManager.unlockRoom(roomId);
     roomTimerManager.resetTimer(roomId);
+   
   } catch (error) {
     console.error('Error in EndActionTrigger:', error);
-  } finally {
-    roomTimerManager.unlockRoom(roomId);
   }
 };
 

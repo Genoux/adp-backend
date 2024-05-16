@@ -25,6 +25,7 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     socket.emit('message', `Welcome to room ${roomid}`);
 
     roomTimerManager.initTimer(roomid, io);
+    roomTimerManager.unlockRoom(roomid);
     await syncTimers(roomid, room.status);
     if (room.ready) {
       await syncTimers(roomid, room.status);

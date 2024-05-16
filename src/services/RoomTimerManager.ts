@@ -1,6 +1,6 @@
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
-import { setDraft } from '../utils/handlers/phaseHandler';
+import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { EndActionTrigger } from '../utils';
 
 interface RoomTimer {
@@ -8,6 +8,7 @@ interface RoomTimer {
   countdownTimerLobby: Timer;
   id: string;
   targetAchievedTimeout?: NodeJS.Timeout;
+  actionTriggered: boolean;
 }
 
 class RoomTimerManager {
@@ -47,7 +48,7 @@ class RoomTimerManager {
       this.handleSecondsUpdated(timer, roomId, io)
     );
     timer.addEventListener('targetAchieved', () =>
-      this.handleTargetAchieved(roomId, onTimerTargetAchieved, io)
+      this.handleTargetAchieved(roomId, onTimerTargetAchieved)
     );
   }
 
@@ -60,14 +61,14 @@ class RoomTimerManager {
   private async handleTargetAchieved(
     roomId: string,
     onTimerTargetAchieved?: () => Promise<void>,
-    io?: Server
   ): Promise<void> {
     const roomTimer = this.roomTimers[roomId];
     if (!roomTimer) return;
 
-    io?.to(roomId).emit('TIMER_FALSE', true);
-    if (onTimerTargetAchieved) {
-      await onTimerTargetAchieved();
+    if (onTimerTargetAchieved && !roomTimer.actionTriggered) {
+      roomTimer.targetAchievedTimeout = setTimeout(async () => {
+        await onTimerTargetAchieved();
+      }, 2000);
     }
   }
 
@@ -87,21 +88,25 @@ class RoomTimerManager {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
       id: roomId,
+      actionTriggered: false,
     };
 
     this.addTimerEventListeners(timerLobby, roomId, io, async () => {
-      await setDraft(roomId);
+      await setDraftPhase(roomId);
     });
 
     this.addTimerEventListeners(timer, roomId, io, async () => {
-      await EndActionTrigger(roomId, this, false);
+      const roomTimer = this.roomTimers[roomId];
+      if (roomTimer) {
+        roomTimer.actionTriggered = true;
+      }
+      await EndActionTrigger(roomId, this);
     });
   }
 
-  public async startLobbyTimer(roomId: string): Promise<void> {
+  public startLobbyTimer(roomId: string): void {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
-      this.stopTimer(roomId); // Ensure the main timer is stopped before starting the lobby timer
       roomTimer.countdownTimerLobby.start({
         countdown: true,
         startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 },
@@ -109,10 +114,21 @@ class RoomTimerManager {
     }
   }
 
+  public startTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.start({
+        countdown: true,
+        startValues: { seconds: Number(process.env.START_TIME) || 30 },
+      });
+    }
+  }
+
   public cancelTargetAchieved(roomId: string): void {
     const roomTimer = this.roomTimers[roomId];
-    if (roomTimer && roomTimer.targetAchievedTimeout) {
+    if (roomTimer) {
       clearTimeout(roomTimer.targetAchievedTimeout);
+      roomTimer.actionTriggered = false;
     }
   }
 
@@ -120,6 +136,7 @@ class RoomTimerManager {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       roomTimer.countdownTimer.reset();
+      roomTimer.actionTriggered = false;
     }
   }
 
@@ -141,17 +158,6 @@ class RoomTimerManager {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       roomTimer.countdownTimerLobby.stop();
-    }
-  }
-
-  public startTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      this.stopLobbyTimer(roomId); // Ensure the main timer is stopped before starting the lobby timer
-      roomTimer.countdownTimer.start({
-        countdown: true,
-        startValues: { seconds: Number(process.env.START_TIME) || 30 },
-      });
     }
   }
 

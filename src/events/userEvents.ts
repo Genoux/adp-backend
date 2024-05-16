@@ -31,8 +31,10 @@ const EVENTS = {
 export const handleUserEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid, selectedChampion }: SelectChampionMessage) => {
-    await EndActionTrigger(roomid, roomTimerManager);
+  socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid }: SelectChampionMessage) => {
+    roomTimerManager.cancelTargetAchieved(roomid);
+    console.log('SELECT_CHAMPION');
+    await EndActionTrigger(roomid, roomTimerManager, true);
   });
 
   socket.on(EVENTS.RESET_TIMER, ({ roomid }: RoomMessage) => {

@@ -24,9 +24,9 @@ export async function updateTurn(roomId: string) {
     // Update teams to reset isturn and nb_turn
     const { error: updateTeamsError } = await supabase
       .from('teams')
-      .update({ isturn: false, nb_turn: 0, canSelect: false})
+      .update({ isturn: false, nb_turn: 0, canSelect: false })
       .eq('room', roomId);
-    
+
     if (updateTeamsError) {
       throw new Error(`Error updating teams: ${updateTeamsError.message}`);
     }
@@ -43,8 +43,12 @@ export async function updateTurn(roomId: string) {
     }
 
     if (room) {
+      if (room.cycle === 16) {
+        return 'done'
+      }
       // Find the next turn in the sequence
-      const turn = turnSequence.find(turn => turn.cycle === room.cycle + 1);
+      const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1});
+      console.log("Current Turn: ", turn);
 
       if (turn) {
         // Begin transaction for updating room and teams
@@ -67,8 +71,6 @@ export async function updateTurn(roomId: string) {
         if (updateTurnError) {
           throw new Error(`Error updating team turn: ${updateTurnError.message}`);
         }
-
-        return turn;
       }
     }
   } catch (error) {
