@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
-import { handleDonePhase } from '../utils/actions/turnHandler';
+import { syncTimers } from '../utils/handlers/phaseHandler';
 
 export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
@@ -21,23 +21,13 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       return;
     }
 
-    if (room.status === 'done' || room.cycle >= 18) {
-      console.log(`Room ${roomid} is already done. Deleting timer if it exists.`);
-      roomTimerManager.deleteTimer(roomid);
-      await handleDonePhase(roomid, io, roomTimerManager);
-      return;
-    }
-
     console.log(`User ${socket.id} joined room ${roomid}`);
     socket.emit('message', `Welcome to room ${roomid}`);
 
     roomTimerManager.initTimer(roomid, io);
-    //handlePhase(room.status, roomid, io, roomTimerManager);
+    await syncTimers(roomid, room.status);
     if (room.ready) {
-     // handleTurn(roomid, io, roomTimerManager);
-      room.status === 'planning'
-        ? roomTimerManager.startLobbyTimer(roomid)
-        : roomTimerManager.startTimer(roomid);
+      await syncTimers(roomid, room.status);
     }
   });
 

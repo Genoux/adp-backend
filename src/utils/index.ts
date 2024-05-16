@@ -1,21 +1,52 @@
 import RoomTimerManager from '../services/RoomTimerManager';
-import { Server } from 'socket.io';
 import supabase from '../supabase';
-import { selectChampion } from './actions/selectChampion';
-import { handlePhase, nextTurn } from './actions/turnHandler';
+import { pickChampion } from './actions/pickChampion';
+import { banChampion } from './actions/banChampion';
+import { updateTurn } from './handlers/draftHandler';
+import { setDonePhase } from './handlers/phaseHandler';
 
-const EndUserTurn = async (roomId: string, io: Server, roomTimerManager: RoomTimerManager, trigger: boolean) => {
+const sleep = (milliseconds: number) => {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+};
+
+const EndActionTrigger = async (roomId: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean) => {
+  roomTimerManager.cancelTargetAchieved(roomId);
+
+  roomTimerManager.lockRoom(roomId);
+  roomTimerManager.stopTimer(roomId);
+  await supabase.from('teams').update({ canSelect: false }).eq('room', roomId)
   try {
-    roomTimerManager.lockRoomTimer(roomId);
-    roomTimerManager.stopTimer(roomId);
-    await selectChampion(roomId, trigger);
-    // await supabase.from('teams').update({ clicked_hero: null, isturn: false, nb_turn: 0 }).eq('room', roomId);
-    await nextTurn(roomId);
-    await handlePhase(roomId, io, roomTimerManager);
-    roomTimerManager.resetTimer(roomId);
-    io.to(roomId).emit('TIMER_RESET', true);
+    const { data: room, error } = await supabase.from('rooms').select('status, cycle').eq('id', roomId).single();
 
-    roomTimerManager.unlockRoomTimer(roomId);
+    if (error) {
+      console.error('Error fetching room data:', error);
+      return;
+    }
+    if (!room) {
+      console.error('Room not found:', roomId);
+      return;
+    }
+    await sleep(2000);
+
+    if (room.status === 'ban') {
+      await banChampion(roomId, userTrigger);
+    } else {
+      await pickChampion(roomId);
+    }
+
+    await supabase.from('teams').update({ isturn: false, nb_turn: 0, clicked_hero: null }).eq('room', roomId)
+
+    // Will update the turn and cycle and user actions
+    const turn = await updateTurn(roomId);
+    console.log("EndActionTrigger - turn:", turn);
+    if (turn === undefined) {
+      await sleep(3000);
+      await setDonePhase(roomId);
+      return;
+    }
+
+    roomTimerManager.resetTimer(roomId);
+    roomTimerManager.unlockRoom(roomId);
 
   } catch (error) {
     console.error('Error in performTimerActions:', error);
@@ -23,4 +54,4 @@ const EndUserTurn = async (roomId: string, io: Server, roomTimerManager: RoomTim
   }
 };
 
-export { EndUserTurn };
+export { EndActionTrigger };
