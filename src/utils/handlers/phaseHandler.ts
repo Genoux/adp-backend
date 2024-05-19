@@ -12,7 +12,6 @@ export const getRoomPhase = async (roomId: string) => {
 }
 
 export const syncTimers = async (roomId: string, phase: string) => {
-  console.log('Syncing timers for room:', roomId);
   if (phase === 'planning') {
     RoomTimerManager.getInstance().startLobbyTimer(roomId);
   }
@@ -30,7 +29,6 @@ export const setWaitingPhase = async (roomId: string) => {
 
     const { error: err_rooms } = await supabase.from('rooms').update({ status: 'waiting', ready: false }).eq('id', roomId);
     const { error: err_teams } = await supabase.from('teams').update({ isturn: false, nb_turn: 0, canSelect: false }).eq('room', roomId)
-
   
     if (err_rooms || err_teams) {
       console.error('Error updating room and team phases:', err_rooms || err_teams);
@@ -45,7 +43,7 @@ export const setWaitingPhase = async (roomId: string) => {
 export const setPlanningPhase = async (roomId: string) => {
   RoomTimerManager.getInstance().stopTimer(roomId);
 
-  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'planning' }).eq('id', roomId);
+  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'planning', ready: true }).eq('id', roomId);
   const { error: err_teams } = await supabase.from('teams').update({ canSelect: false }).eq('room', roomId)
 
   if (err_rooms || err_teams) {
@@ -63,7 +61,7 @@ export const setPlanningPhase = async (roomId: string) => {
 export async function setDraftPhase(roomId: string): Promise<void> {
   RoomTimerManager.getInstance().stopLobbyTimer(roomId);
 
-  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'ban', cycle: 1 }).eq('id', roomId);
+  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'ban', cycle: 1, ready: true }).eq('id', roomId);
   const { error: err_teams } = await supabase.from('teams').update({ isturn: true, nb_turn: 1, canSelect: true }).eq('room', roomId).eq('color', 'blue');
 
   if (err_rooms || err_teams) {
@@ -79,13 +77,13 @@ export async function setDraftPhase(roomId: string): Promise<void> {
 export const setDonePhase = async (roomId: string) => {
   const { error } = await supabase
     .from('rooms')
-    .update({ status: 'done' })
+    .update({ status: 'done', ready: false})
     .eq('id', roomId);
 
   if (error) {
     console.error('Error updating room phase:', error);
     throw error;
   }
-  RoomTimerManager.getInstance().stopTimer(roomId);
+  RoomTimerManager.getInstance().deleteTimer(roomId);
   console.log(`Room ${roomId} status updated to done.`);
 }

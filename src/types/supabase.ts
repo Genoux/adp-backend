@@ -100,8 +100,6 @@ export interface Database {
           nb_turn: number | null;
           ready: boolean | null;
           room: number;
-          selected_hero: string | null;
-          socketid: Json | null;
         };
         Insert: {
           clicked_hero?: string | null;
@@ -116,8 +114,6 @@ export interface Database {
           nb_turn?: number | null;
           ready?: boolean | null;
           room: number;
-          selected_hero?: string | null;
-          socketid?: Json | null;
         };
         Update: {
           clicked_hero?: string | null;
@@ -132,8 +128,6 @@ export interface Database {
           nb_turn?: number | null;
           ready?: boolean | null;
           room?: number;
-          selected_hero?: string | null;
-          socketid?: Json | null;
         };
         Relationships: [
           {

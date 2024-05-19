@@ -1,35 +1,35 @@
 import supabase from '../supabase';
 import { Hero } from './heroes';
 
-const fetchTeamAndRoomData = async (roomId: string) => {
-  const [teamResponse, roomResponse] = await Promise.all([
-    supabase
-      .from('teams')
-      .select('id, isturn, heroes_selected, heroes_ban, clicked_hero, nb_turn')
-      .eq('room', roomId)
-      .eq('isturn', true)
-      .single(),
-    supabase
-      .from('rooms')
-      .select('id, heroes_pool')
-      .eq('id', roomId)
-      .single(),
-  ]);
+// const fetchTeamAndRoomData = async (roomId: string) => {
+//   const [teamResponse, roomResponse] = await Promise.all([
+//     supabase
+//       .from('teams')
+//       .select('id, isturn, heroes_selected, heroes_ban, clicked_hero, nb_turn')
+//       .eq('room', roomId)
+//       .eq('isturn', true)
+//       .single(),
+//     supabase
+//       .from('rooms')
+//       .select('id, heroes_pool')
+//       .eq('id', roomId)
+//       .single(),
+//   ]);
 
-  if (teamResponse.error || roomResponse.error) {
-    console.error('Error fetching data:', teamResponse.error || roomResponse.error);
-    return null;
-  }
+//   if (teamResponse.error || roomResponse.error) {
+//     console.error('Error fetching data:', teamResponse.error || roomResponse.error);
+//     return null;
+//   }
 
-  return {
-    team: teamResponse.data,
-    room: roomResponse.data,
-  };
-};
+//   return {
+//     team: teamResponse.data,
+//     room: roomResponse.data,
+//   };
+// };
 
 const updateDatabase = async (
-  roomId: string,
-  teamId: string,
+  roomId: number,
+  teamId: number,
   heroesSelected: Hero[],
   heroesBan: Hero[],
   updatedHeroesPool: Hero[],
@@ -58,5 +58,5 @@ const updateDatabase = async (
   }
 };
 
-export { fetchTeamAndRoomData, updateDatabase };
+export { updateDatabase };
 

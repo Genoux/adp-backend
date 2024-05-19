@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 import { syncTimers } from '../utils/handlers/phaseHandler';
+//import { syncTurn } from '../utils/handlers/draftHandler';
 
 export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
@@ -24,12 +25,13 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     console.log(`User ${socket.id} joined room ${roomid}`);
     socket.emit('message', `Welcome to room ${roomid}`);
 
+    if (!room.ready) return
+
     roomTimerManager.initTimer(roomid, io);
     roomTimerManager.unlockRoom(roomid);
     await syncTimers(roomid, room.status);
-    if (room.ready) {
-      await syncTimers(roomid, room.status);
-    }
+   //await syncTurn(room as { id: string, cycle: number });
+
   });
 
   socket.on('disconnect', (reason) => {

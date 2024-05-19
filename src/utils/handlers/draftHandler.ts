@@ -1,4 +1,6 @@
 import supabase from '../../supabase';
+import { setDonePhase } from './phaseHandler';
+import sleep from '../../helpers/sleep';
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -19,58 +21,39 @@ export const turnSequence = [
   { phase: 'select', teamColor: 'red', cycle: 16 },
 ];
 
-export async function updateTurn(roomId: string) {
+type Room = {
+  room_id: string;
+  cycle: number;
+};
+
+export async function updateTurn(room: Room) {
   try {
-    // Update teams to reset isturn and nb_turn
-    const { error: updateTeamsError } = await supabase
-      .from('teams')
-      .update({ isturn: false, nb_turn: 0, canSelect: false })
-      .eq('room', roomId);
-
-    if (updateTeamsError) {
-      throw new Error(`Error updating teams: ${updateTeamsError.message}`);
+    if (room.cycle === 16) {
+      sleep(3000);
+      await setDonePhase(room.room_id);
+      return
     }
+    const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1 });
 
-    // Get the current cycle for the room
-    const { data: room, error: roomError } = await supabase
-      .from('rooms')
-      .select('cycle')
-      .eq('id', roomId)
-      .single();
+    if (turn) {
+      // Begin transaction for updating room and teams
+      const { error: updateRoomError } = await supabase
+        .from('rooms')
+        .update({ status: turn.phase, cycle: turn.cycle })
+        .eq('id', room.room_id)
 
-    if (roomError) {
-      throw new Error(`Error fetching room: ${roomError.message}`);
-    }
-
-    if (room) {
-      if (room.cycle === 16) {
-        return 'done'
+      if (updateRoomError) {
+        throw new Error(`Error updating room: ${updateRoomError.message}`);
       }
-      // Find the next turn in the sequence
-      const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1});
-      console.log("Current Turn: ", turn);
 
-      if (turn) {
-        // Begin transaction for updating room and teams
-        const { error: updateRoomError } = await supabase
-          .from('rooms')
-          .update({ status: turn.phase, cycle: turn.cycle })
-          .eq('id', roomId)
-          .single();
+      const { error: updateTurnError } = await supabase
+        .from('teams')
+        .update({ isturn: true, nb_turn: 1, canSelect: true })
+        .eq('room', room.room_id)
+        .eq('color', turn.teamColor);
 
-        if (updateRoomError) {
-          throw new Error(`Error updating room: ${updateRoomError.message}`);
-        }
-
-        const { error: updateTurnError } = await supabase
-          .from('teams')
-          .update({ isturn: true, nb_turn: 1, canSelect: true })
-          .eq('room', roomId)
-          .eq('color', turn.teamColor);
-
-        if (updateTurnError) {
-          throw new Error(`Error updating team turn: ${updateTurnError.message}`);
-        }
+      if (updateTurnError) {
+        throw new Error(`Error updating team turn: ${updateTurnError.message}`);
       }
     }
   } catch (error) {

@@ -1,19 +1,34 @@
-import { fetchTeamAndRoomData, updateDatabase } from '../database';
+import { updateDatabase } from '../database';
 import { getHeroFromPool, updateHeroSelectionInPool, updateTeamHeroSelection } from '../heroes';
 
-const pickChampion = async (roomId: string) => {
+type Hero = {
+  id: string;
+  name: string | null;
+  selected?: boolean;
+};
+
+type Data = {
+  room_id: number;
+  status: string;
+  cycle: number;
+  heroes_pool: Hero[];
+  team_id: number;
+  isturn: boolean;
+  heroes_selected: Hero[];
+  heroes_ban: Hero[];
+  clicked_hero: string | null;
+  nb_turn: number;
+};
+
+const pickChampion = async (data: Data) => {
   try {
-    const data = await fetchTeamAndRoomData(roomId);
-    if (!data) return;
 
-    const { team, room } = data;
+    const finalSelectedHero = getHeroFromPool(data.heroes_pool, data.clicked_hero);
 
-    const finalSelectedHero = getHeroFromPool(room.heroes_pool, team.clicked_hero);
+    updateTeamHeroSelection(data.heroes_selected, finalSelectedHero);
+    const updatedHeroesPool = updateHeroSelectionInPool(data.heroes_pool, finalSelectedHero);
 
-    updateTeamHeroSelection(team.heroes_selected, finalSelectedHero);
-    const updatedHeroesPool = updateHeroSelectionInPool(room.heroes_pool, finalSelectedHero);
-
-    await updateDatabase(roomId, team.id, team.heroes_selected, team.heroes_ban, updatedHeroesPool);
+    await updateDatabase(data.room_id, data.team_id, data.heroes_selected, data.heroes_ban, updatedHeroesPool);
   } catch (error) {
     console.error('Error in pickChampion:', error);
   }

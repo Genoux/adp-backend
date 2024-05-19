@@ -3,53 +3,70 @@ import supabase from '../supabase';
 import { pickChampion } from './actions/pickChampion';
 import { banChampion } from './actions/banChampion';
 import { updateTurn } from './handlers/draftHandler';
-import { setDonePhase } from './handlers/phaseHandler';
+import sleep from '../helpers/sleep';
 
-const sleep = (milliseconds: number) => {
-  return new Promise(resolve => setTimeout(resolve, milliseconds));
-};
+interface Team {
+  id: number;
+  isturn: boolean;
+  clicked_hero: string | null;
+}
 
-const EndActionTrigger = async (roomId: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean) => {
-  roomTimerManager.cancelTargetAchieved(roomId);
-  if (roomTimerManager.isLocked(roomId)) return;
-  
-  roomTimerManager.lockRoom(roomId);
-  roomTimerManager.stopTimer(roomId);
-  
+interface Room {
+  id: number;
+  status: string;
+  cycle: number;
+  blue: Team;
+  red: Team;
+}
+
+const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean) => {
+  roomTimerManager.cancelTargetAchieved(roomID);
+
+  if (roomTimerManager.isLocked(roomID)) {
+    console.log('Room is locked');
+    return;
+  }
+
+  roomTimerManager.lockRoom(roomID);
+  roomTimerManager.stopTimer(roomID);
+
+  await supabase.from('teams').update({ canSelect: false }).eq('room', roomID);
+
   try {
-    await supabase.from('teams').update({ canSelect: false }).eq('room', roomId);
+    const { data, error } = await supabase
+      .rpc('get_active_team_with_room', { room_id_param: roomID })
 
-    const { data: room, error } = await supabase.from('rooms').select('status, cycle').eq('id', roomId).single();
     if (error) {
-      console.error('Error fetching room data:', error);
-      return;
-    }
-    if (!room) {
-      console.error('Room not found:', roomId);
+      console.error('Error fetching room with active team:', error);
       return;
     }
 
-    await sleep(500);
+    const activeTeam = data[0]
 
-    if (room.status === 'ban') {
-      await banChampion(roomId, userTrigger);
-    } else {
-      await pickChampion(roomId);
+    switch (activeTeam.status) {
+      case 'ban':
+        await banChampion(activeTeam, userTrigger);
+        break;
+      case 'select':
+        await pickChampion(activeTeam);
+        break;
+      default:
+        // Do nothing
+        break;
     }
 
-    await supabase.from('teams').update({ isturn: false, nb_turn: 0, clicked_hero: null }).eq('room', roomId);
+    await supabase.from('teams').update({ isturn: false, nb_turn: 0, clicked_hero: null }).eq('id', activeTeam.team_id);
 
-    const turn = await updateTurn(roomId);
+    await sleep(2000);
 
-    if (turn === 'done') {
-      await sleep(3000);
-      await setDonePhase(roomId);
-      return;
-    }
+    await updateTurn(activeTeam);
 
-    roomTimerManager.unlockRoom(roomId);
-    roomTimerManager.resetTimer(roomId);
-   
+    await sleep(1000);
+
+    roomTimerManager.unlockRoom(roomID);
+    roomTimerManager.startTimer(roomID);
+    roomTimerManager.resetTimer(roomID);
+
   } catch (error) {
     console.error('Error in EndActionTrigger:', error);
   }

@@ -6,7 +6,6 @@ const router = Router();
 router.post('/', async (req, res) => {
   try {
     const roomid = req.query.roomid as string;
-    console.log("router.post - roomid:", roomid);
     if (!roomid) {
       return res.status(400).send('roomid query parameter is required');
     }
