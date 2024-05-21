@@ -46,15 +46,17 @@ export async function updateTurn(room: Room) {
         throw new Error(`Error updating room: ${updateRoomError.message}`);
       }
 
-      const { error: updateTurnError } = await supabase
-        .from('teams')
-        .update({ isturn: true, nb_turn: 1, canSelect: true })
-        .eq('room', room.room_id)
-        .eq('color', turn.teamColor);
+      // const { error: updateTurnError } = await supabase
+      //   .from('teams')
+      //   .update({ isturn: true, canSelect: true })
+      //   .eq('room', room.room_id)
+      //   .eq('color', turn.teamColor);
 
-      if (updateTurnError) {
-        throw new Error(`Error updating team turn: ${updateTurnError.message}`);
-      }
+      // if (updateTurnError) {
+      //   throw new Error(`Error updating team turn: ${updateTurnError.message}`);
+      // }
+
+      return turn;
     }
   } catch (error) {
     console.error("Error in updateTurn:", error);

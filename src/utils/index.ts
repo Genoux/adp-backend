@@ -55,18 +55,29 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
         break;
     }
 
-    await supabase.from('teams').update({ isturn: false, nb_turn: 0, clicked_hero: null }).eq('id', activeTeam.team_id);
-
-    await sleep(2000);
-
-    await updateTurn(activeTeam);
+    await supabase.from('teams').update({ clicked_hero: null }).eq('id', activeTeam.team_id);
 
     await sleep(1000);
 
-    roomTimerManager.unlockRoom(roomID);
-    roomTimerManager.startTimer(roomID);
-    roomTimerManager.resetTimer(roomID);
+    const turn = await updateTurn(activeTeam);
 
+    roomTimerManager.unlockRoom(roomID);
+
+    if (turn) {
+      const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
+      
+      await sleep(1000);
+
+      await supabase.from('teams').update({ isturn: false }).eq('color', otherColor);
+      await supabase
+        .from('teams')
+        .update({ isturn: true, canSelect: true })
+        .eq('room', roomID)
+        .eq('color', turn.teamColor);
+
+      roomTimerManager.startTimer(roomID);
+      roomTimerManager.resetTimer(roomID);
+    }
   } catch (error) {
     console.error('Error in EndActionTrigger:', error);
   }

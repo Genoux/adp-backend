@@ -5,7 +5,7 @@ import { Hero } from './heroes';
 //   const [teamResponse, roomResponse] = await Promise.all([
 //     supabase
 //       .from('teams')
-//       .select('id, isturn, heroes_selected, heroes_ban, clicked_hero, nb_turn')
+//       .select('id, isturn, heroes_selected, heroes_ban, clicked_hero')
 //       .eq('room', roomId)
 //       .eq('isturn', true)
 //       .single(),
@@ -39,8 +39,6 @@ const updateDatabase = async (
     .update({
       heroes_selected: heroesSelected,
       heroes_ban: heroesBan,
-      nb_turn: 0,
-      isturn: false,
     })
     .eq('id', teamId);
 

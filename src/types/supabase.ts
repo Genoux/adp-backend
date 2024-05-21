@@ -97,7 +97,6 @@ export interface Database {
           id: number;
           isturn: boolean | null;
           name: string;
-          nb_turn: number | null;
           ready: boolean | null;
           room: number;
         };
@@ -111,7 +110,6 @@ export interface Database {
           id?: number;
           isturn?: boolean | null;
           name: string;
-          nb_turn?: number | null;
           ready?: boolean | null;
           room: number;
         };
@@ -125,7 +123,6 @@ export interface Database {
           id?: number;
           isturn?: boolean | null;
           name?: string;
-          nb_turn?: number | null;
           ready?: boolean | null;
           room?: number;
         };

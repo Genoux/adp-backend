@@ -28,7 +28,7 @@ export const syncTimers = async (roomId: string, phase: string) => {
 export const setWaitingPhase = async (roomId: string) => {
 
     const { error: err_rooms } = await supabase.from('rooms').update({ status: 'waiting', ready: false }).eq('id', roomId);
-    const { error: err_teams } = await supabase.from('teams').update({ isturn: false, nb_turn: 0, canSelect: false }).eq('room', roomId)
+    const { error: err_teams } = await supabase.from('teams').update({ isturn: false, canSelect: false }).eq('room', roomId)
   
     if (err_rooms || err_teams) {
       console.error('Error updating room and team phases:', err_rooms || err_teams);
@@ -62,7 +62,7 @@ export async function setDraftPhase(roomId: string): Promise<void> {
   RoomTimerManager.getInstance().stopLobbyTimer(roomId);
 
   const { error: err_rooms } = await supabase.from('rooms').update({ status: 'ban', cycle: 1, ready: true }).eq('id', roomId);
-  const { error: err_teams } = await supabase.from('teams').update({ isturn: true, nb_turn: 1, canSelect: true }).eq('room', roomId).eq('color', 'blue');
+  const { error: err_teams } = await supabase.from('teams').update({ isturn: true, canSelect: true }).eq('room', roomId).eq('color', 'blue');
 
   if (err_rooms || err_teams) {
     console.error('Error updating room and team phases:', err_rooms || err_teams);

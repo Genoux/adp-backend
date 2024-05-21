@@ -17,7 +17,6 @@ type Data = {
   heroes_selected: Hero[];
   heroes_ban: Hero[];
   clicked_hero: string | null;
-  nb_turn: number;
 };
 
 /**
