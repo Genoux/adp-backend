@@ -1,23 +1,24 @@
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
-import supabase from '../supabase';
-import { selectChampion } from '../utils/champions';
-import { updateRoomCycle } from '../utils/roomCycle';
-import { switchTurn } from '../utils/switchTeam';
+import { setDraftPhase } from '../utils/handlers/phaseHandler';
+import { EndActionTrigger } from '../utils';
 
 interface RoomTimer {
   countdownTimer: Timer;
   countdownTimerLobby: Timer;
   id: string;
-  lock: boolean;
-  timerId?: NodeJS.Timeout;
-  isTimeUp: boolean;
   targetAchievedTimeout?: NodeJS.Timeout;
+  actionTriggered: boolean;
 }
 
 class RoomTimerManager {
   private static instance: RoomTimerManager;
   private roomTimers: Record<string, RoomTimer> = {};
+  private roomLocks: Record<string, boolean> = {};
+
+  private constructor() {
+    // Private constructor, singleton
+  }
 
   public static getInstance(): RoomTimerManager {
     if (!RoomTimerManager.instance) {
@@ -33,6 +34,7 @@ class RoomTimerManager {
   public deleteTimer(roomId: string): void {
     if (this.hasTimer(roomId)) {
       delete this.roomTimers[roomId];
+      delete this.roomLocks[roomId];
     }
   }
 
@@ -46,34 +48,28 @@ class RoomTimerManager {
       this.handleSecondsUpdated(timer, roomId, io)
     );
     timer.addEventListener('targetAchieved', () =>
-      this.handleTargetAchieved(roomId, onTimerTargetAchieved, io)
+      this.handleTargetAchieved(roomId, onTimerTargetAchieved)
     );
   }
 
   private handleSecondsUpdated(timer: Timer, roomId: string, io: Server): void {
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(
-      2,
-      '0'
-    )}:${String(timeValues.seconds).padStart(2, '0')}`;
+    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(timeValues.seconds).padStart(2, '0')}`;
     io.to(roomId).emit('TIMER', formattedTime);
   }
 
   private async handleTargetAchieved(
     roomId: string,
     onTimerTargetAchieved?: () => Promise<void>,
-    io?: Server
   ): Promise<void> {
     const roomTimer = this.roomTimers[roomId];
     if (!roomTimer) return;
-    
-    roomTimer.targetAchievedTimeout = setTimeout(async () => {
-      io?.to(roomId.toString()).emit('TIMER_FALSE', true);
-      roomTimer.isTimeUp = true;
-      if (!roomTimer.lock && onTimerTargetAchieved) {
+
+    if (onTimerTargetAchieved && !roomTimer.actionTriggered) {
+      roomTimer.targetAchievedTimeout = setTimeout(async () => {
         await onTimerTargetAchieved();
-      }
-    }, 2000);
+      }, 2000);
+    }
   }
 
   public hasTimer(roomId: string): boolean {
@@ -82,9 +78,7 @@ class RoomTimerManager {
 
   public initTimer(roomId: string, io: Server): void {
     if (this.hasTimer(roomId)) {
-      console.log(
-        `Timer for room ${roomId} already exists. Skipping initialization.`
-      );
+      console.log(`Timer for room ${roomId} already exists. Skipping initialization.`);
       return;
     }
 
@@ -94,79 +88,29 @@ class RoomTimerManager {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
       id: roomId,
-      lock: false,
-      isTimeUp: false,
+      actionTriggered: false,
     };
 
     this.addTimerEventListeners(timerLobby, roomId, io, async () => {
-      const roomTimer = this.roomTimers[roomId];
-      if (roomTimer) {
-        roomTimer.isTimeUp = false;
-        console.log(`Lobby timer target achieved for room ${roomId}`);
-        await this.startTimer(roomId);
-        await updateRoomCycle(roomId);
-        roomTimer.countdownTimerLobby.stop();
-      }
+      await setDraftPhase(roomId);
     });
 
     this.addTimerEventListeners(timer, roomId, io, async () => {
-      this.stopTimer(roomId);
-      await selectChampion(roomId, null);
-      const cycle = await updateRoomCycle(roomId);
-      if (!cycle) return;
-      await switchTurn(roomId, cycle);
-      this.resetTimer(roomId);
+      const roomTimer = this.roomTimers[roomId];
+      if (roomTimer) {
+        roomTimer.actionTriggered = true;
+      }
+      await EndActionTrigger(roomId, this);
     });
   }
 
-  public async startLobbyTimer(roomId: string): Promise<void> {
+  public startLobbyTimer(roomId: string): void {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
-      this.stopTimer(roomId); // Ensure the main timer is stopped before starting the lobby timer
       roomTimer.countdownTimerLobby.start({
         countdown: true,
         startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 },
       });
-    }
-  }
-
-  public lockRoomTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.lock = true;
-    }
-  }
-
-  public unlockRoomTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.lock = false;
-    }
-  }
-
-  public isTimeUp(roomId: string): boolean {
-    const roomTimer = this.roomTimers[roomId];
-    return roomTimer ? roomTimer.isTimeUp : false;
-  }
-
-  public cancelTargetAchieved(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer && roomTimer.targetAchievedTimeout) {
-      clearTimeout(roomTimer.targetAchievedTimeout);
-    }
-  }
-
-  public resetTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.reset();
-    }
-  }
-
-  public stopTimer(roomId: string): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.stop();
     }
   }
 
@@ -178,6 +122,55 @@ class RoomTimerManager {
         startValues: { seconds: Number(process.env.START_TIME) || 30 },
       });
     }
+  }
+
+  public cancelTargetAchieved(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      clearTimeout(roomTimer.targetAchievedTimeout);
+      roomTimer.actionTriggered = false;
+    }
+  }
+
+  public resetTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.reset();
+      roomTimer.actionTriggered = false;
+    }
+  }
+
+  public resetLobbyTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimerLobby.reset();
+    }
+  }
+
+  public stopTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimer.stop();
+    }
+  }
+
+  public stopLobbyTimer(roomId: string): void {
+    const roomTimer = this.roomTimers[roomId];
+    if (roomTimer) {
+      roomTimer.countdownTimerLobby.stop();
+    }
+  }
+
+  public lockRoom(roomId: string): void {
+    this.roomLocks[roomId] = true;
+  }
+
+  public unlockRoom(roomId: string): void {
+    this.roomLocks[roomId] = false;
+  }
+
+  public isLocked(roomId: string): boolean {
+    return this.roomLocks[roomId];
   }
 }
 
