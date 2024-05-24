@@ -2,12 +2,17 @@ import { Server, Socket } from 'socket.io';
 import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 import { syncTimers } from '../utils/handlers/phaseHandler';
-//import { syncTurn } from '../utils/handlers/draftHandler';
+import { syncUserTurn } from '../utils/handlers/draftHandler';
+interface Ids {
+  roomid: string;
+  teamid: string;
+}
 
 export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on('joinRoom', async ({ roomid }) => {
+  socket.on('joinRoom', async ({ roomid, teamid }: Ids) => {
+    console.log("id team", teamid);
     socket.join(roomid);
 
     const { data: room, error } = await supabase
@@ -22,16 +27,19 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
       return;
     }
 
-    console.log(`User ${socket.id} joined room ${roomid}`);
     socket.emit('message', `Welcome to room ${roomid}`);
 
+    if (!roomTimerManager.hasTimer(roomid)) {
+      roomTimerManager.initTimer(roomid, io, socket);
+    }
+   
+    console.log(`User ${socket.id} joined room ${roomid}`);
+
+
     if (!room.ready) return
-
-    roomTimerManager.initTimer(roomid, io);
-    roomTimerManager.unlockRoom(roomid);
     await syncTimers(roomid, room.status);
-   //await syncTurn(room as { id: string, cycle: number });
-
+    await syncUserTurn(roomid, teamid);
+    console.log('syncUserTurn');
   });
 
   socket.on('disconnect', (reason) => {

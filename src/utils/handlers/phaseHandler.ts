@@ -52,7 +52,7 @@ export const setPlanningPhase = async (roomId: string) => {
   }
 
   RoomTimerManager.getInstance().startLobbyTimer(roomId);
-  RoomTimerManager.getInstance().resetLobbyTimer(roomId);
+ // RoomTimerManager.getInstance().resetLobbyTimer(roomId);
   RoomTimerManager.getInstance().unlockRoom(roomId);
 
   console.log(`Room ${roomId} status updated to planning!`);

@@ -1,5 +1,5 @@
 import { Timer } from 'easytimer.js';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { EndActionTrigger } from '../utils';
 
@@ -42,6 +42,7 @@ class RoomTimerManager {
     timer: Timer,
     roomId: string,
     io: Server,
+    socket: Socket,
     onTimerTargetAchieved?: () => Promise<void>
   ): void {
     timer.addEventListener('secondsUpdated', () =>
@@ -76,7 +77,7 @@ class RoomTimerManager {
     return roomId in this.roomTimers;
   }
 
-  public initTimer(roomId: string, io: Server): void {
+  public initTimer(roomId: string, io: Server, socket: Socket): void {
     if (this.hasTimer(roomId)) {
       console.log(`Timer for room ${roomId} already exists. Skipping initialization.`);
       return;
@@ -91,16 +92,16 @@ class RoomTimerManager {
       actionTriggered: false,
     };
 
-    this.addTimerEventListeners(timerLobby, roomId, io, async () => {
+    this.addTimerEventListeners(timerLobby, roomId, io, socket, async () => {
       await setDraftPhase(roomId);
     });
 
-    this.addTimerEventListeners(timer, roomId, io, async () => {
+    this.addTimerEventListeners(timer, roomId, io, socket, async () => {
       const roomTimer = this.roomTimers[roomId];
       if (roomTimer) {
         roomTimer.actionTriggered = true;
       }
-      await EndActionTrigger(roomId, this);
+      await EndActionTrigger(roomId, this, false, socket);
     });
   }
 

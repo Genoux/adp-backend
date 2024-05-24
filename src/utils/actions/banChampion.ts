@@ -31,8 +31,6 @@ const banChampion = async (data: Data, userTrigger?: boolean) => {
 
     // const { team, room } = data;
     
-    console.log('banChampion data:', data);
-
     let finalSelectedHero: Hero | undefined;
     if (!data.clicked_hero || !userTrigger) {
       finalSelectedHero = getRandomUnselectedHero(data.heroes_pool);

@@ -12,7 +12,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    await EndActionTrigger(roomid, RoomTimerManager.getInstance());
+    await EndActionTrigger(roomid, RoomTimerManager.getInstance(), true);
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {
     console.error('Error setting waiting phase:', error);

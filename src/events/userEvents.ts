@@ -34,7 +34,7 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
   socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid }: SelectChampionMessage) => {
     roomTimerManager.cancelTargetAchieved(roomid);
     console.log('SELECT_CHAMPION');
-    await EndActionTrigger(roomid, roomTimerManager, true);
+    await EndActionTrigger(roomid, roomTimerManager, true, socket);
   });
 
   socket.on(EVENTS.RESET_TIMER, ({ roomid }: RoomMessage) => {
@@ -66,8 +66,9 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
           .from('rooms')
           .update({ ready: true })
           .eq('id', roomid);
-        await setPlanningPhase(roomid);
         console.log(`Room ${roomid} is ready!`);
+        
+        await setPlanningPhase(roomid);
       }
     } catch (error) {
       console.error('Error in handleTeamReady:', error);

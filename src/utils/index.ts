@@ -4,22 +4,9 @@ import { pickChampion } from './actions/pickChampion';
 import { banChampion } from './actions/banChampion';
 import { updateTurn } from './handlers/draftHandler';
 import sleep from '../helpers/sleep';
+import type { Socket } from 'socket.io';
 
-interface Team {
-  id: number;
-  isturn: boolean;
-  clicked_hero: string | null;
-}
-
-interface Room {
-  id: number;
-  status: string;
-  cycle: number;
-  blue: Team;
-  red: Team;
-}
-
-const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean) => {
+const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean, socket? : Socket) => {
   roomTimerManager.cancelTargetAchieved(roomID);
 
   if (roomTimerManager.isLocked(roomID)) {
@@ -35,10 +22,13 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
   try {
     const { data, error } = await supabase
       .rpc('get_active_team_with_room', { room_id_param: roomID })
-
+ 
     if (error) {
-      console.error('Error fetching room with active team:', error);
-      return;
+      console.error('Error in handleSelectChampion:', error);
+      if (socket) {
+        socket.emit('err', error);
+      }
+      return error;
     }
 
     const activeTeam = data[0]
@@ -60,7 +50,6 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
     await sleep(1000);
 
     const turn = await updateTurn(activeTeam);
-
     roomTimerManager.unlockRoom(roomID);
 
     if (turn) {

@@ -1,6 +1,7 @@
 import supabase from '../../supabase';
 import { setDonePhase } from './phaseHandler';
 import sleep from '../../helpers/sleep';
+import RoomTimerManager from '../../services/RoomTimerManager';
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -25,6 +26,29 @@ type Room = {
   room_id: string;
   cycle: number;
 };
+
+// from the team where room is isturn set conSelect
+export async function syncUserTurn(roomid: string, teamid: string) {
+  try {
+    if(!teamid) return;
+    const { error } = await supabase
+      .from('teams')
+      .update({ canSelect: true })
+      .eq('id', teamid)
+      .eq('isturn', true);
+    
+    if (RoomTimerManager.getInstance().isLocked(roomid)) {
+        console.log('Room is locked, unlocking...');
+        RoomTimerManager.getInstance().unlockRoom(roomid);
+      }
+
+    if (error) {
+      throw new Error(`Error updating team turn: ${error.message}`)
+    }
+  } catch (error) {
+    console.error("Error in syncTurn:", error);
+  }
+}
 
 export async function updateTurn(room: Room) {
   try {
