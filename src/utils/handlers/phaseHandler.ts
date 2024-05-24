@@ -44,7 +44,7 @@ export const setPlanningPhase = async (roomId: string) => {
   RoomTimerManager.getInstance().stopTimer(roomId);
 
   const { error: err_rooms } = await supabase.from('rooms').update({ status: 'planning', ready: true }).eq('id', roomId);
-  const { error: err_teams } = await supabase.from('teams').update({ canSelect: false }).eq('room', roomId)
+  const { error: err_teams } = await supabase.from('teams').update({ canSelect: false, clicked_hero: null }).eq('room', roomId)
 
   if (err_rooms || err_teams) {
     console.error('Error updating room and team phases:', err_rooms || err_teams);
