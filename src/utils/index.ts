@@ -6,7 +6,9 @@ import { updateTurn } from './handlers/draftHandler';
 import sleep from '../helpers/sleep';
 import type { Socket } from 'socket.io';
 
-const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean, socket? : Socket) => {
+const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean, socket?: Socket) => {
+  await supabase.from('teams').update({ canSelect: false }).eq('room', roomID);
+
   roomTimerManager.cancelTargetAchieved(roomID);
 
   if (roomTimerManager.isLocked(roomID)) {
@@ -17,7 +19,7 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
   roomTimerManager.lockRoom(roomID);
   roomTimerManager.stopTimer(roomID);
 
-  await supabase.from('teams').update({ canSelect: false }).eq('room', roomID);
+
 
   try {
     const { data, error } = await supabase
@@ -45,7 +47,8 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
         break;
     }
 
-    await supabase.from('teams').update({ clicked_hero: null }).eq('id', activeTeam.team_id);
+   // await supabase.from('teams').update({ clicked_hero: null }).eq('id', activeTeam.team_id);
+    await supabase.from('teams').update({ clicked_hero: null }).eq('room', roomID);
 
     await sleep(1000);
 

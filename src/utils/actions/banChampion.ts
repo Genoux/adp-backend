@@ -26,14 +26,11 @@ type Data = {
  */
 const banChampion = async (data: Data, userTrigger?: boolean) => {
   try {
-  //  const data = await fetchTeamAndRoomData(roomId);
-  //  if (!data) return;
-
-    // const { team, room } = data;
     
-    let finalSelectedHero: Hero | undefined;
-    if (!data.clicked_hero || !userTrigger) {
-      finalSelectedHero = getRandomUnselectedHero(data.heroes_pool);
+    let finalSelectedHero: Hero | undefined | null = null;
+    //!data.clicked_hero || 
+    if (!userTrigger) {
+      finalSelectedHero = null;
     } else {
       finalSelectedHero = getHeroFromPool(data.heroes_pool, data.clicked_hero);
     }
