@@ -45,7 +45,6 @@ export interface Database {
           ready: boolean | null;
           red: number | null;
           status: string | null;
-          timer: string | null;
         };
         Insert: {
           blue?: number | null;
@@ -57,7 +56,6 @@ export interface Database {
           ready?: boolean | null;
           red?: number | null;
           status?: string | null;
-          timer?: string | null;
         };
         Update: {
           blue?: number | null;
@@ -69,7 +67,6 @@ export interface Database {
           ready?: boolean | null;
           red?: number | null;
           status?: string | null;
-          timer?: string | null;
         };
         Relationships: [
           {
@@ -90,50 +87,38 @@ export interface Database {
         Row: {
           clicked_hero: string | null;
           color: string;
-          connected: boolean | null;
           created_at: string | null;
           heroes_ban: Json;
           heroes_selected: Json;
           id: number;
           isturn: boolean | null;
           name: string;
-          nb_turn: number | null;
           ready: boolean | null;
           room: number;
-          selected_hero: string | null;
-          socketid: Json | null;
         };
         Insert: {
           clicked_hero?: string | null;
           color: string;
-          connected?: boolean | null;
           created_at?: string | null;
           heroes_ban: Json;
           heroes_selected: Json;
           id?: number;
           isturn?: boolean | null;
           name: string;
-          nb_turn?: number | null;
           ready?: boolean | null;
           room: number;
-          selected_hero?: string | null;
-          socketid?: Json | null;
         };
         Update: {
           clicked_hero?: string | null;
           color?: string;
-          connected?: boolean | null;
           created_at?: string | null;
           heroes_ban?: Json;
           heroes_selected?: Json;
           id?: number;
           isturn?: boolean | null;
           name?: string;
-          nb_turn?: number | null;
           ready?: boolean | null;
           room?: number;
-          selected_hero?: string | null;
-          socketid?: Json | null;
         };
         Relationships: [
           {
