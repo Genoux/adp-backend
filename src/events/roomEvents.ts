@@ -32,9 +32,6 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     if (!roomTimerManager.hasTimer(roomid)) {
       roomTimerManager.initTimer(roomid, io, socket);
     }
-   
-    console.log(`User ${socket.id} joined room ${roomid}`);
-
 
     if (!room.ready) return
     await syncTimers(roomid, room.status);
