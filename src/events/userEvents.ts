@@ -37,14 +37,6 @@ export const handleUserEvents = (socket: Socket, io: Server) => {
     await EndActionTrigger(roomid, roomTimerManager, true, socket);
   });
 
-  socket.on(EVENTS.RESET_TIMER, ({ roomid }: RoomMessage) => {
-    //roomTimerManager.resetTimer(roomid);
-  });
-
-  socket.on(EVENTS.STOP_TIMER, ({ roomid }: RoomMessage) => {
-    //roomTimerManager.stopTimer(roomid);
-  });
-
   socket.on(EVENTS.START_TIMER, ({ roomid }: RoomMessage) => {
     roomTimerManager.startTimer(roomid);
   });
