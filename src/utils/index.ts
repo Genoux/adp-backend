@@ -3,7 +3,6 @@ import supabase from '../supabase';
 import { pickChampion } from './actions/pickChampion';
 import { banChampion } from './actions/banChampion';
 import { updateTurn } from './handlers/draftHandler';
-import sleep from '../helpers/sleep';
 import type { Socket } from 'socket.io';
 
 const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean, socket?: Socket) => {
@@ -18,8 +17,6 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
 
   roomTimerManager.lockRoom(roomID);
   roomTimerManager.stopTimer(roomID);
-
-
 
   try {
     const { data, error } = await supabase
