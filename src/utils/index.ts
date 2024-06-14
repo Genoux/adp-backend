@@ -3,7 +3,6 @@ import supabase from '../supabase';
 import { pickChampion } from './actions/pickChampion';
 import { banChampion } from './actions/banChampion';
 import { updateTurn } from './handlers/draftHandler';
-import sleep from '../helpers/sleep';
 import type { Socket } from 'socket.io';
 
 const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManager, userTrigger?: boolean, socket?: Socket) => {
@@ -18,8 +17,6 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
 
   roomTimerManager.lockRoom(roomID);
   roomTimerManager.stopTimer(roomID);
-
-
 
   try {
     const { data, error } = await supabase
@@ -50,16 +47,12 @@ const EndActionTrigger = async (roomID: string, roomTimerManager: RoomTimerManag
    // await supabase.from('teams').update({ clicked_hero: null }).eq('id', activeTeam.team_id);
     await supabase.from('teams').update({ clicked_hero: null }).eq('room', roomID);
 
-    await sleep(1000);
-
     const turn = await updateTurn(activeTeam);
     roomTimerManager.unlockRoom(roomID);
 
     if (turn) {
       const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
       
-      await sleep(1000);
-
       await supabase.from('teams').update({ isturn: false }).eq('color', otherColor);
       await supabase
         .from('teams')

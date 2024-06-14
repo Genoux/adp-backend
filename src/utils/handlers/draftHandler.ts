@@ -53,7 +53,7 @@ export async function syncUserTurn(roomid: string, teamid: string) {
 export async function updateTurn(room: Room) {
   try {
     if (room.cycle === 16) {
-      sleep(3000);
+      await sleep(2000);
       await setDonePhase(room.room_id);
       return
     }
@@ -69,16 +69,6 @@ export async function updateTurn(room: Room) {
       if (updateRoomError) {
         throw new Error(`Error updating room: ${updateRoomError.message}`);
       }
-
-      // const { error: updateTurnError } = await supabase
-      //   .from('teams')
-      //   .update({ isturn: true, canSelect: true })
-      //   .eq('room', room.room_id)
-      //   .eq('color', turn.teamColor);
-
-      // if (updateTurnError) {
-      //   throw new Error(`Error updating team turn: ${updateTurnError.message}`);
-      // }
 
       return turn;
     }
