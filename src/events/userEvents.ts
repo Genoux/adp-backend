@@ -1,4 +1,4 @@
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
 import RoomTimerManager from '../services/RoomTimerManager';
 import supabase from '../supabase';
 import { EndActionTrigger } from '../utils';
@@ -28,7 +28,7 @@ const EVENTS = {
   TIMER_RESET: 'TIMER_RESET',
 };
 
-export const handleUserEvents = (socket: Socket, io: Server) => {
+export const handleUserEvents = (socket: Socket) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid }: SelectChampionMessage) => {

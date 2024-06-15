@@ -1,5 +1,5 @@
 import { updateDatabase } from '../database';
-import { getHeroFromPool, updateHeroSelectionInPool, updateTeamHeroSelection, getRandomUnselectedHero } from '../heroes';
+import { getHeroFromPool, updateHeroSelectionInPool, updateTeamHeroSelection } from '../heroes';
 
 type Hero = {
   id: string;
