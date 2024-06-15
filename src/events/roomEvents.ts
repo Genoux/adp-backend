@@ -12,7 +12,6 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   socket.on('joinRoom', async ({ roomid, teamid }: Ids) => {
-    console.log("id team", teamid);
     socket.join(roomid);
 
     const { data: room, error } = await supabase
@@ -32,14 +31,10 @@ export const handleRoomEvents = (socket: Socket, io: Server) => {
     if (!roomTimerManager.hasTimer(roomid)) {
       roomTimerManager.initTimer(roomid, io, socket);
     }
-   
-    console.log(`User ${socket.id} joined room ${roomid}`);
-
 
     if (!room.ready) return
     await syncTimers(roomid, room.status);
     await syncUserTurn(roomid, teamid);
-    console.log('syncUserTurn');
   });
 
   socket.on('disconnect', (reason) => {

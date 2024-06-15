@@ -37,7 +37,6 @@ export const setWaitingPhase = async (roomId: string) => {
 
   RoomTimerManager.getInstance().stopLobbyTimer(roomId);
   RoomTimerManager.getInstance().stopTimer(roomId);
-  console.log(`Room ${roomId} status updated to waiting.`);
 }
 
 export const setPlanningPhase = async (roomId: string) => {
@@ -55,7 +54,6 @@ export const setPlanningPhase = async (roomId: string) => {
  // RoomTimerManager.getInstance().resetLobbyTimer(roomId);
   RoomTimerManager.getInstance().unlockRoom(roomId);
 
-  console.log(`Room ${roomId} status updated to planning!`);
 }
 
 export async function setDraftPhase(roomId: string): Promise<void> {
@@ -71,7 +69,6 @@ export async function setDraftPhase(roomId: string): Promise<void> {
 
   RoomTimerManager.getInstance().startTimer(roomId);
   RoomTimerManager.getInstance().resetTimer(roomId);
-  console.log(`Room ${roomId} status updated to draft.`);
 }
 
 export const setDonePhase = async (roomId: string) => {
@@ -85,5 +82,4 @@ export const setDonePhase = async (roomId: string) => {
     throw error;
   }
   RoomTimerManager.getInstance().deleteTimer(roomId);
-  console.log(`Room ${roomId} status updated to done.`);
 }
