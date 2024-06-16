@@ -101,7 +101,7 @@ class RoomTimerManager {
       if (roomTimer) {
         roomTimer.actionTriggered = true;
       }
-      await EndActionTrigger(roomId, this, false, socket);
+      await EndActionTrigger(roomId, this, false);
     });
   }
 

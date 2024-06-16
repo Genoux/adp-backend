@@ -28,7 +28,7 @@ import { Hero } from './heroes';
 // };
 
 const updateDatabase = async (
-  roomId: number,
+  roomId: string,
   teamId: number,
   heroesSelected: Hero[],
   heroesBan: Hero[],
