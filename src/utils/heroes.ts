@@ -35,7 +35,7 @@ const updateTeamHeroSelection = (heroes: Hero[], hero?: Hero): void => {
   const index = heroes.findIndex(h => h !== null && !h.selected);
   if (index !== -1) {
     heroes[index] = {
-      id: hero?.id || '',
+      id: hero?.id || null,
       name: hero?.name || null,
       selected: true,
     };
