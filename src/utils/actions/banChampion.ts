@@ -11,7 +11,6 @@ const banChampion = async (data: Data, userTrigger?: boolean) => {
   try {
     
     let finalSelectedHero: Hero | undefined | null = null;
-    //!data.clicked_hero || 
     if (!userTrigger && !data.clicked_hero) {
       finalSelectedHero = null;
     } else {

@@ -1,5 +1,5 @@
 export type Hero = {
-  id: string;
+  id: string | null;
   name: string | null;
   selected?: boolean;
 };
