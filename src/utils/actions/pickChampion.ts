@@ -1,23 +1,6 @@
 import { updateDatabase } from '../database';
 import { getHeroFromPool, updateHeroSelectionInPool, updateTeamHeroSelection } from '../heroes';
-
-type Hero = {
-  id: string;
-  name: string | null;
-  selected?: boolean;
-};
-
-type Data = {
-  room_id: number;
-  status: string;
-  cycle: number;
-  heroes_pool: Hero[];
-  team_id: number;
-  isturn: boolean;
-  heroes_selected: Hero[];
-  heroes_ban: Hero[];
-  clicked_hero: string | null;
-};
+import { Data } from '../../types/global';
 
 const pickChampion = async (data: Data) => {
   try {

@@ -1,5 +1,5 @@
 type Hero = {
-  id: string;
+  id: string | null;
   name: string | null;
   selected?: boolean;
 } | null;
@@ -13,7 +13,7 @@ const getRandomUnselectedHero = (heroesPool: Hero[]): Hero | undefined => {
 
 const getHeroFromPool = (heroesPool: Hero[], heroName: string | null): Hero | undefined => {
   if (!heroName) return getRandomUnselectedHero(heroesPool);
-  const hero = heroesPool.find(h => h && h.name === heroName);
+  const hero = heroesPool.find(h => h && h.id === heroName);
   if (hero?.selected) {
     console.log("Hero already selected, returning random hero");
     return getRandomUnselectedHero(heroesPool);
@@ -26,8 +26,8 @@ const updateHeroSelectionInPool = (heroesPool: Hero[], hero?: Hero): Hero[] =>
     if (h === null) return null;
     return {
       ...h,
-      selected: h.name === hero?.name ? true : h.selected,
-      id: h.name === hero?.name ? (hero?.id || '') : h.id || '',
+      selected: h.id === hero?.id ? true : h.selected,
+      id: h.id === hero?.id ? (hero?.id || null) : h.id || null,
     };
   });
 
@@ -35,7 +35,7 @@ const updateTeamHeroSelection = (heroes: Hero[], hero?: Hero): void => {
   const index = heroes.findIndex(h => h !== null && !h.selected);
   if (index !== -1) {
     heroes[index] = {
-      id: hero?.id || '',
+      id: hero?.id || null,
       name: hero?.name || null,
       selected: true,
     };

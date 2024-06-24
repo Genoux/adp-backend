@@ -42,7 +42,7 @@ export const startServer = () => {
 
   io.on('connection', (socket: Socket) => {
     handleRoomEvents(socket, io);
-    handleUserEvents(socket, io);
+    handleUserEvents(socket);
   });
 
   // Handle the root route
