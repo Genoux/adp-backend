@@ -1,8 +1,8 @@
-import supabaseQuery from '@/helpers/supabaseQuery';
-import supabase from '@/supabase';
-import { RoomData } from '@/types/global';
-import finisTurn from '@/utils/actions/finishTurn';
-import { setDraftPhase } from '@/utils/handlers/phaseHandler';
+import supabaseQuery from '../helpers/supabaseQuery';
+import supabase from '../supabase';
+import { RoomData } from '../types/global';
+import finisTurn from '..//utils/actions/finishTurn';
+import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
 
@@ -37,7 +37,7 @@ class RoomTimerManager {
   public async initializeAllRoomTimers(): Promise<void> {
     const rooms = await supabaseQuery<RoomData[]>(
       'rooms',
-      (q) => q.select('*'),
+      (q: { select: (arg0: string) => any; }) => q.select('*'),
       'Error fetching all rooms in initializeAllRoomTimers'
     );
 
@@ -63,7 +63,7 @@ class RoomTimerManager {
           schema: 'aram_draft_pick',
           table: 'rooms',
         },
-        (payload) => {
+        (payload: { new: any; }) => {
           const newRoom = payload.new as RoomData;
           console.log('New room', newRoom.id);
           this.initializeRoomTimer(newRoom);
@@ -83,7 +83,7 @@ class RoomTimerManager {
           schema: 'aram_draft_pick',
           table: 'rooms',
         },
-        (payload) => {
+        (payload: { new: any; }) => {
           const updatedRoom = payload.new as RoomData;
           this.handleRoomStatusChange(updatedRoom);
         }

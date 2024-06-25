@@ -1,6 +1,6 @@
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import { RoomData } from '@/types/global';
+import supabaseQuery from '../helpers/supabaseQuery';
+import RoomTimerManager from '../services/RoomTimerManager';
+import { RoomData } from '../types/global';
 import cronstrue from 'cronstrue';
 import { subHours } from 'date-fns';
 import cron from 'node-cron';

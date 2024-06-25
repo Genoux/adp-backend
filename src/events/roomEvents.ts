@@ -1,7 +1,7 @@
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import { RoomData } from '@/types/global';
-import { syncUserTurn } from '@/utils/handlers/draftHandler';
+import supabaseQuery from '../helpers/supabaseQuery';
+import RoomTimerManager from '../services/RoomTimerManager';
+import { RoomData } from '../types/global';
+import { syncUserTurn } from '../utils/handlers/draftHandler';
 import { Socket } from 'socket.io';
 
 const handleRoomEvents = (socket: Socket) => {

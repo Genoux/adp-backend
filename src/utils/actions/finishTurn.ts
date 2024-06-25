@@ -1,18 +1,14 @@
-import { getActiveTeamWithRoom } from '@/helpers/database';
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import { Data, DraftAction, TeamData } from '@/types/global';
-import { selectChampion } from '@/utils/actions/selectChampion';
-import { updateTurn } from '@/utils/handlers/draftHandler';
+import { getActiveTeamWithRoom } from '../../helpers/database';
+import supabaseQuery from '../../helpers/supabaseQuery';
+import RoomTimerManager from '../../services/RoomTimerManager';
+import { Data, DraftAction, TeamData } from '../../types/global';
+import { selectChampion } from '../../utils/actions/selectChampion';
+import { updateTurn } from '../../utils/handlers/draftHandler';
 
 const endAction = async (activeTeam: Data) => {
   await selectChampion(activeTeam, activeTeam.status as DraftAction);
 
-  await supabaseQuery<TeamData[]>(
-    'teams',
-    (q) => q.update({ clicked_hero: null }).eq('room', activeTeam.room_id),
-    'Error updating clicked_hero in endActionTrigger.ts'
-  );
+
 };
 
 const finishTurn = async (
@@ -51,7 +47,7 @@ const finishTurn = async (
         'teams',
         (q) =>
           q
-            .update({ isturn: true, canSelect: true })
+            .update({ isturn: true, canSelect: true, clicked_hero: null })
             .eq('room', roomID)
             .eq('color', turn.teamColor),
         'Error updating turn for active team in updateTurnAndRestartTimer.ts'
@@ -60,7 +56,7 @@ const finishTurn = async (
         'teams',
         (q) =>
           q
-            .update({ isturn: false })
+            .update({ isturn: false, clicked_hero: null })
             .eq('room', roomID)
             .eq('color', otherColor),
         'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'

@@ -1,7 +1,7 @@
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import supabase from '@/supabase';
-import { RoomData, TeamData } from '@/types/global';
+import supabaseQuery from '../../helpers/supabaseQuery';
+import RoomTimerManager from '../../services/RoomTimerManager';
+import supabase from '../../supabase';
+import { RoomData, TeamData } from '../../types/global';
 
 export const setWaitingPhase = async (roomId: string) => {
   await supabaseQuery<RoomData[]>(

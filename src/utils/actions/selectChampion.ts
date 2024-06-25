@@ -1,5 +1,5 @@
-import { updateDatabase } from '@/helpers/database';
-import { Data, DraftAction, Hero } from '@/types/global';
+import { updateDatabase } from '../../helpers/database';
+import { Data, DraftAction, Hero } from '../../types/global';
 
 // Helper Functions
 const getRandomUnselectedHero = (heroesPool: Hero[]): Hero | null => {

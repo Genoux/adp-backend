@@ -1,4 +1,4 @@
-import { setDonePhase } from '@/utils/handlers/phaseHandler';
+import { setDonePhase } from '../utils/handlers/phaseHandler';
 import { Router } from 'express';
 
 const router = Router();

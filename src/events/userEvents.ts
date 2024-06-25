@@ -1,8 +1,8 @@
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import { TeamData } from '@/types/global';
-import finishTurn from '@/utils/actions/finishTurn';
-import { setPlanningPhase } from '@/utils/handlers/phaseHandler';
+import supabaseQuery from '../helpers/supabaseQuery';
+import RoomTimerManager from '../services/RoomTimerManager';
+import { TeamData } from '../types/global';
+import finishTurn from '../utils/actions/finishTurn';
+import { setPlanningPhase } from '../utils/handlers/phaseHandler';
 import { Socket } from 'socket.io';
 
 const handleUserEvents = (socket: Socket) => {

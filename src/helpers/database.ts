@@ -1,6 +1,6 @@
-import supabase from '@/supabase';
-import { Data, Hero, RoomData, TeamData } from '@/types/global';
-import supabaseQuery from '@/helpers/supabaseQuery';
+import supabase from '../supabase';
+import { Data, Hero, RoomData, TeamData } from '../types/global';
+import supabaseQuery from '../helpers/supabaseQuery';
 
 const getRoomData = async (roomID: string) => {
   return await supabaseQuery<RoomData>(

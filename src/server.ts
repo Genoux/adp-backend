@@ -1,9 +1,9 @@
 import { createServer } from 'http';
 import api from './api';
-import handleRoomEvents from '@/events/roomEvents';
-import handleUserEvents from '@/events/userEvents';
-import startRoomCleanupService from '@/helpers/cleanupRoomsCron';
-import RoomTimerManager from '@/services/RoomTimerManager';
+import handleRoomEvents from './events/roomEvents';
+import handleUserEvents from './events/userEvents';
+import startRoomCleanupService from './helpers/cleanupRoomsCron';
+import RoomTimerManager from './services/RoomTimerManager';
 import cors from 'cors';
 import express from 'express';
 import { Server, Socket } from 'socket.io';

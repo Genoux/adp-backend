@@ -1,4 +1,4 @@
-import { setDraftPhase } from '@/utils/handlers/phaseHandler';
+import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { Router } from 'express';
 
 const router = Router();

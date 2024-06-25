@@ -1,8 +1,8 @@
-import sleep from '@/helpers/sleep';
-import supabaseQuery from '@/helpers/supabaseQuery';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import { RoomData, TeamData } from '@/types/global';
-import { setDonePhase } from '@/utils/handlers/phaseHandler';
+import sleep from '../../helpers/sleep';
+import supabaseQuery from '../../helpers/supabaseQuery';
+import RoomTimerManager from '../../services/RoomTimerManager';
+import { RoomData, TeamData } from '../../types/global';
+import { setDonePhase } from '../../utils/handlers/phaseHandler';
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
