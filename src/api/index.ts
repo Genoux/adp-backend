@@ -1,8 +1,8 @@
-import actionRoutes from '@/routes/action';
-import doneRoutes from '@/routes/done';
-import draftRoutes from '@/routes/draft';
-import planningRoutes from '@/routes/planning';
-import waitingRoutes from '@/routes/waiting';
+import actionRoutes from '../routes/action';
+import doneRoutes from '../routes/done';
+import draftRoutes from '../routes/draft';
+import planningRoutes from '../routes/planning';
+import waitingRoutes from '../routes/waiting';
 import { Router } from 'express';
 
 const router = Router();
