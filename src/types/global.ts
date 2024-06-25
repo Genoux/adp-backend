@@ -22,7 +22,7 @@ export type RoomData = {
   cycle: number;
   heroes_pool: Hero[];
   ready: boolean;
-}
+};
 
 export type TeamData = {
   id: number;
@@ -31,6 +31,6 @@ export type TeamData = {
   heroes_ban: Hero[];
   clicked_hero: string | null;
   ready: boolean;
-}
+};
 
 export type DraftAction = 'ban' | 'select';

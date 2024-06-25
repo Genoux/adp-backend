@@ -1,33 +1,19 @@
-import { Socket } from 'socket.io';
+import supabaseQuery from '@/helpers/supabaseQuery';
 import RoomTimerManager from '@/services/RoomTimerManager';
+import { TeamData } from '@/types/global';
 import finishTurn from '@/utils/actions/finishTurn';
 import { setPlanningPhase } from '@/utils/handlers/phaseHandler';
-import supabaseQuery from '@/helpers/supabaseQuery';
-import { TeamData } from '@/types/global';
-
-type RoomMessage = {
-  roomid: string;
-}
-
-type TeamReadyMessage = {
-  roomid: string;
-  teamid: string;
-}
-
-const EVENTS = {
-  SELECT_CHAMPION: 'SELECT_CHAMPION',
-  TEAM_READY: 'TEAM_READY',
-};
+import { Socket } from 'socket.io';
 
 const handleUserEvents = (socket: Socket) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on(EVENTS.SELECT_CHAMPION, async ({ roomid }: RoomMessage) => {
+  socket.on('SELECT_CHAMPION', async ({ roomid }: { roomid: string }) => {
     roomTimerManager.cancelTargetAchieved(roomid);
     await finishTurn(roomid, roomTimerManager);
   });
 
-  socket.on(EVENTS.TEAM_READY, async ({ roomid, teamid }: TeamReadyMessage) => {
+  socket.on('TEAM_READY', async ({ roomid, teamid }: { roomid: string; teamid: string }) => {
     try {
       const teams = await supabaseQuery<TeamData[]>(
         'teams',
@@ -38,15 +24,14 @@ const handleUserEvents = (socket: Socket) => {
       console.log(`Team ${teamid} is ready!`);
 
       if (teams.every((team) => team.ready)) {
-        
         await supabaseQuery<TeamData[]>(
-            'rooms',
-            (q) => q.update({ready: true}).eq('id', roomid),
-            'Error fetching rooms data'
-          );
-        
+          'rooms',
+          (q) => q.update({ ready: true }).eq('id', roomid),
+          'Error fetching rooms data'
+        );
+
         console.log(`Room ${roomid} is ready!`);
-        
+
         await setPlanningPhase(roomid);
       }
     } catch (error) {

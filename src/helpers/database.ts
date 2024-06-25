@@ -1,7 +1,6 @@
 import supabase from '@/supabase';
-//import { Hero } from '@/utils/heroes';
-import { RoomData, TeamData, Data, Hero } from '@/types/global';
-import supabaseQuery from './supabaseQuery';
+import { Data, Hero, RoomData, TeamData } from '@/types/global';
+import supabaseQuery from '@/helpers/supabaseQuery';
 
 const getRoomData = async (roomID: string) => {
   return await supabaseQuery<RoomData>(
@@ -14,12 +13,19 @@ const getRoomData = async (roomID: string) => {
 const getActiveTeamData = async (roomID: string) => {
   return await supabaseQuery<TeamData>(
     'teams',
-    (q) => q.select('id, isturn, heroes_selected, heroes_ban, clicked_hero').eq('room', roomID).eq('isturn', true).single(),
+    (q) =>
+      q
+        .select('id, isturn, heroes_selected, heroes_ban, clicked_hero')
+        .eq('room', roomID)
+        .eq('isturn', true)
+        .single(),
     'Error fetching team data'
   );
 };
 
-export const getActiveTeamWithRoom = async (roomID: string): Promise<Data | null> => {
+export const getActiveTeamWithRoom = async (
+  roomID: string
+): Promise<Data | null> => {
   try {
     const roomData = await getRoomData(roomID);
     const teamData = await getActiveTeamData(roomID);
@@ -46,7 +52,7 @@ const updateDatabase = async (
   teamId: number,
   heroesSelected: Hero[],
   heroesBan: Hero[],
-  updatedHeroesPool: Hero[],
+  updatedHeroesPool: Hero[]
 ) => {
   const { error: teamError } = await supabase
     .from('teams')
@@ -71,4 +77,3 @@ const updateDatabase = async (
 };
 
 export { updateDatabase };
-

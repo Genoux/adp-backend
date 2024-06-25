@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import supabase from '@/supabase';
 
 export default async function supabaseQuery<T>(

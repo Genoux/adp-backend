@@ -1,17 +1,16 @@
+import supabaseQuery from '@/helpers/supabaseQuery';
+import supabase from '@/supabase';
+import { RoomData } from '@/types/global';
+import finisTurn from '@/utils/actions/finishTurn';
+import { setDraftPhase } from '@/utils/handlers/phaseHandler';
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
-import { setDraftPhase } from '@/utils/handlers/phaseHandler';
-import finisTurn from '@/utils/actions/finishTurn';
-import supabaseQuery from '@/helpers/supabaseQuery';
-import { RoomData } from '@/types/global';
-import supabase from '@/supabase';
 
 interface RoomTimer {
   countdownTimer: Timer;
   countdownTimerLobby: Timer;
   id: string;
   targetAchievedTimeout?: NodeJS.Timeout;
-  actionTriggered: boolean;
 }
 
 class RoomTimerManager {
@@ -72,8 +71,6 @@ class RoomTimerManager {
         }
       )
       .subscribe();
-
-    console.log('Subscribed to new room insertions');
   }
 
   public subscribeToRoomUpdates(): void {
@@ -92,12 +89,9 @@ class RoomTimerManager {
         }
       )
       .subscribe();
-
-    console.log('Subscribed to room status updates');
   }
 
   private handleRoomStatusChange(room: RoomData): void {
-    console.log('Room status changed');
     switch (room.status) {
       case 'planning':
         this.stopTimer(room.id);
@@ -141,18 +135,21 @@ class RoomTimerManager {
   private handleSecondsUpdated(timer: Timer, roomId: string): void {
     if (!this.io) return;
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(timeValues.seconds).padStart(2, '0')}`;
+    const formattedTime = `${String(timeValues.minutes).padStart(
+      2,
+      '0'
+    )}:${String(timeValues.seconds).padStart(2, '0')}`;
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
   }
 
   private async handleTargetAchieved(
     roomId: string,
-    onTimerTargetAchieved?: () => Promise<void>,
+    onTimerTargetAchieved?: () => Promise<void>
   ): Promise<void> {
     const roomTimer = this.roomTimers[roomId];
     if (!roomTimer) return;
 
-    if (onTimerTargetAchieved && !roomTimer.actionTriggered) {
+    if (onTimerTargetAchieved) {
       roomTimer.targetAchievedTimeout = setTimeout(async () => {
         await onTimerTargetAchieved();
       }, 2000);
@@ -165,7 +162,9 @@ class RoomTimerManager {
 
   public initTimer(roomId: string): void {
     if (this.hasTimer(roomId)) {
-      console.log(`Timer for room ${roomId} already exists. Skipping initialization.`);
+      console.log(
+        `Timer for room ${roomId} already exists. Skipping initialization.`
+      );
       return;
     }
 
@@ -175,7 +174,6 @@ class RoomTimerManager {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
       id: roomId,
-      actionTriggered: false,
     };
 
     this.addTimerEventListeners(timerLobby, roomId, async () => {
@@ -183,10 +181,6 @@ class RoomTimerManager {
     });
 
     this.addTimerEventListeners(timer, roomId, async () => {
-      const roomTimer = this.roomTimers[roomId];
-      if (roomTimer) {
-        roomTimer.actionTriggered = true;
-      }
       await finisTurn(roomId, this);
     });
   }
@@ -215,7 +209,6 @@ class RoomTimerManager {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       clearTimeout(roomTimer.targetAchievedTimeout);
-      roomTimer.actionTriggered = false;
     }
   }
 
@@ -223,7 +216,6 @@ class RoomTimerManager {
     const roomTimer = this.roomTimers[roomId];
     if (roomTimer) {
       roomTimer.countdownTimer.reset();
-      roomTimer.actionTriggered = false;
     }
   }
 

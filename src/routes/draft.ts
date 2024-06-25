@@ -1,5 +1,5 @@
-import { Router } from 'express';
 import { setDraftPhase } from '@/utils/handlers/phaseHandler';
+import { Router } from 'express';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ router.post('/', async (req, res) => {
     if (!roomid) {
       return res.status(400).send('roomid query parameter is required');
     }
-  
+
     await setDraftPhase(roomid);
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {

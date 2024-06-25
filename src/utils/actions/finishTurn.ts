@@ -1,9 +1,9 @@
+import { getActiveTeamWithRoom } from '@/helpers/database';
+import supabaseQuery from '@/helpers/supabaseQuery';
 import RoomTimerManager from '@/services/RoomTimerManager';
+import { Data, DraftAction, TeamData } from '@/types/global';
 import { selectChampion } from '@/utils/actions/selectChampion';
 import { updateTurn } from '@/utils/handlers/draftHandler';
-import { Data, TeamData, DraftAction } from '@/types/global';
-import supabaseQuery from '@/helpers/supabaseQuery';
-import { getActiveTeamWithRoom } from '@/helpers/database';
 
 const endAction = async (activeTeam: Data) => {
   await selectChampion(activeTeam, activeTeam.status as DraftAction);
@@ -15,7 +15,10 @@ const endAction = async (activeTeam: Data) => {
   );
 };
 
-const finishTurn = async (roomID: string, roomTimerManager: RoomTimerManager) => {
+const finishTurn = async (
+  roomID: string,
+  roomTimerManager: RoomTimerManager
+) => {
   await supabaseQuery<TeamData[]>(
     'teams',
     (q) => q.update({ canSelect: false }).eq('room', roomID),
@@ -38,7 +41,7 @@ const finishTurn = async (roomID: string, roomTimerManager: RoomTimerManager) =>
       return;
     }
 
-    await endAction(activeTeam,);
+    await endAction(activeTeam);
     const turn = await updateTurn(activeTeam);
     roomTimerManager.unlockRoom(roomID);
 
@@ -46,12 +49,20 @@ const finishTurn = async (roomID: string, roomTimerManager: RoomTimerManager) =>
       const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
       await supabaseQuery<TeamData[]>(
         'teams',
-        (q) => q.update({ isturn: true, canSelect: true }).eq('room', roomID).eq('color', turn.teamColor),
+        (q) =>
+          q
+            .update({ isturn: true, canSelect: true })
+            .eq('room', roomID)
+            .eq('color', turn.teamColor),
         'Error updating turn for active team in updateTurnAndRestartTimer.ts'
       );
       await supabaseQuery<TeamData[]>(
         'teams',
-        (q) => q.update({ isturn: false }).eq('room', roomID).eq('color', otherColor),
+        (q) =>
+          q
+            .update({ isturn: false })
+            .eq('room', roomID)
+            .eq('color', otherColor),
         'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'
       );
     }
@@ -60,4 +71,4 @@ const finishTurn = async (roomID: string, roomTimerManager: RoomTimerManager) =>
   }
 };
 
-export default finishTurn
+export default finishTurn;

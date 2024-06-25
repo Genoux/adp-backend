@@ -1,11 +1,12 @@
 import { createServer } from 'http';
+import api from '@/api';
+import handleRoomEvents from '@/events/roomEvents';
+import handleUserEvents from '@/events/userEvents';
+import startRoomCleanupService from '@/helpers/cleanupRoomsCron';
+import RoomTimerManager from '@/services/RoomTimerManager';
 import cors from 'cors';
 import express from 'express';
 import { Server, Socket } from 'socket.io';
-import handleRoomEvents from '@/events/roomEvents';
-import handleUserEvents from '@/events/userEvents';
-import RoomTimerManager from '@/services/RoomTimerManager';
-import api from './api';
 
 export const startServer = () => {
   const app = express();
@@ -24,7 +25,10 @@ export const startServer = () => {
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET,HEAD,OPTIONS,POST,PUT');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+    );
     next();
   });
 
@@ -43,16 +47,20 @@ export const startServer = () => {
   // Initialize TimersManager
   const roomTimerManager = RoomTimerManager.getInstance();
   roomTimerManager.setIo(io);
-  
+
   // Initialize timers for all existing rooms
   roomTimerManager.initializeAllRoomTimers().catch(console.error);
-  
+
   // Subscribe to new room creations and updates
   roomTimerManager.subscribeToNewRooms();
   roomTimerManager.subscribeToRoomUpdates();
 
+  startRoomCleanupService().catch((error: Error) => {
+    console.error('Error starting room cleanup service:', error);
+  });
+
   io.on('connection', (socket: Socket) => {
-    console.log('Connected to socket.io', socket.id);
+    console.log(`Connection established: ${socket.id}`);
     handleRoomEvents(socket);
     handleUserEvents(socket);
   });

@@ -1,9 +1,8 @@
-//import supabase from '../../supabase';
-import { setDonePhase } from '@/utils/handlers/phaseHandler';
 import sleep from '@/helpers/sleep';
-import RoomTimerManager from '@/services/RoomTimerManager';
 import supabaseQuery from '@/helpers/supabaseQuery';
-import { TeamData, RoomData } from '@/types/global';
+import RoomTimerManager from '@/services/RoomTimerManager';
+import { RoomData, TeamData } from '@/types/global';
+import { setDonePhase } from '@/utils/handlers/phaseHandler';
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -32,20 +31,18 @@ type Room = {
 // from the team where room is isturn set conSelect
 export async function syncUserTurn(roomid: string, teamid: string) {
   try {
-
     await supabaseQuery<TeamData[]>(
       'teams',
-      (q) => q.update({canSelect: true}).eq('id', teamid).eq('isturn', true),
+      (q) => q.update({ canSelect: true }).eq('id', teamid).eq('isturn', true),
       'Error fetching teams data in draftHandler.ts'
     );
-    
-    if (RoomTimerManager.getInstance().isLocked(roomid)) {
-        console.log('Room is locked, unlocking...');
-        RoomTimerManager.getInstance().unlockRoom(roomid);
-    }
 
+    if (RoomTimerManager.getInstance().isLocked(roomid)) {
+      console.log('Room is locked, unlocking...');
+      RoomTimerManager.getInstance().unlockRoom(roomid);
+    }
   } catch (error) {
-    console.error("Error in syncTurn:", error);
+    console.error('Error in syncTurn:', error);
   }
 }
 
@@ -54,21 +51,25 @@ export async function updateTurn(room: Room) {
     if (room.cycle === 16) {
       await sleep(2000);
       await setDonePhase(room.room_id);
-      return
+      return;
     }
-    const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1 });
+    const turn = turnSequence.find((turn) => {
+      return turn.cycle === room.cycle + 1;
+    });
 
     if (turn) {
-      
       await supabaseQuery<RoomData[]>(
         'rooms',
-        (q) => q.update({status: turn.phase, cycle: turn.cycle}).eq('id', room.room_id),
+        (q) =>
+          q
+            .update({ status: turn.phase, cycle: turn.cycle })
+            .eq('id', room.room_id),
         'Error fetching rooms data in draftHandler.ts'
       );
 
       return turn;
     }
   } catch (error) {
-    console.error("Error in updateTurn:", error);
+    console.error('Error in updateTurn:', error);
   }
 }
