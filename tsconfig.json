@@ -5,7 +5,11 @@
     "strict": true,
     "esModuleInterop": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/supabase": ["./src/supabase"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]

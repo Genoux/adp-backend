@@ -1,7 +1,9 @@
-import supabase from '../../supabase';
-import { setDonePhase } from './phaseHandler';
-import sleep from '../../helpers/sleep';
-import RoomTimerManager from '../../services/RoomTimerManager';
+//import supabase from '../../supabase';
+import { setDonePhase } from '@/utils/handlers/phaseHandler';
+import sleep from '@/helpers/sleep';
+import RoomTimerManager from '@/services/RoomTimerManager';
+import supabaseQuery from '@/helpers/supabaseQuery';
+import { TeamData, RoomData } from '@/types/global';
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -30,21 +32,18 @@ type Room = {
 // from the team where room is isturn set conSelect
 export async function syncUserTurn(roomid: string, teamid: string) {
   try {
-    if(!teamid) return;
-    const { error } = await supabase
-      .from('teams')
-      .update({ canSelect: true })
-      .eq('id', teamid)
-      .eq('isturn', true);
+
+    await supabaseQuery<TeamData[]>(
+      'teams',
+      (q) => q.update({canSelect: true}).eq('id', teamid).eq('isturn', true),
+      'Error fetching teams data in draftHandler.ts'
+    );
     
     if (RoomTimerManager.getInstance().isLocked(roomid)) {
         console.log('Room is locked, unlocking...');
         RoomTimerManager.getInstance().unlockRoom(roomid);
-      }
-
-    if (error) {
-      throw new Error(`Error updating team turn: ${error.message}`)
     }
+
   } catch (error) {
     console.error("Error in syncTurn:", error);
   }
@@ -60,15 +59,12 @@ export async function updateTurn(room: Room) {
     const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1 });
 
     if (turn) {
-      // Begin transaction for updating room and teams
-      const { error: updateRoomError } = await supabase
-        .from('rooms')
-        .update({ status: turn.phase, cycle: turn.cycle })
-        .eq('id', room.room_id)
-
-      if (updateRoomError) {
-        throw new Error(`Error updating room: ${updateRoomError.message}`);
-      }
+      
+      await supabaseQuery<RoomData[]>(
+        'rooms',
+        (q) => q.update({status: turn.phase, cycle: turn.cycle}).eq('id', room.room_id),
+        'Error fetching rooms data in draftHandler.ts'
+      );
 
       return turn;
     }

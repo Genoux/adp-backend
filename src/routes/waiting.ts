@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { setWaitingPhase } from '../utils/handlers/phaseHandler';
-import supabase from '../supabase';
+import { setWaitingPhase } from '@/utils/handlers/phaseHandler';
+import supabase from '@/supabase';
 
 const router = Router();
 

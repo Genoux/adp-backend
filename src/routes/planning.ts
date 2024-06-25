@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { setPlanningPhase } from '../utils/handlers/phaseHandler';
-import supabase from '../supabase';
+import { setPlanningPhase } from '@/utils/handlers/phaseHandler';
+import supabase from '@/supabase';
 
 const router = Router();
 

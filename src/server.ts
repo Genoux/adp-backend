@@ -2,20 +2,21 @@ import { createServer } from 'http';
 import cors from 'cors';
 import express from 'express';
 import { Server, Socket } from 'socket.io';
-import { handleRoomEvents } from './events/roomEvents';
-import { handleUserEvents } from './events/userEvents';
+import handleRoomEvents from '@/events/roomEvents';
+import handleUserEvents from '@/events/userEvents';
+import RoomTimerManager from '@/services/RoomTimerManager';
 import api from './api';
 
 export const startServer = () => {
   const app = express();
 
-  // Apply CORS middleware before any other middleware or routes
+  // Apply CORS middleware
   app.use(
     cors({
-      origin: '*', // Allow all origins
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allowed methods
-      credentials: true, // Allow credentials (cookies, authorization headers, etc.)
-      optionsSuccessStatus: 204, // Some legacy browsers choke on 204
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+      optionsSuccessStatus: 204,
     })
   );
 
@@ -31,23 +32,34 @@ export const startServer = () => {
   app.use('/api', api);
 
   const server = createServer(app);
-
   const io = new Server(server, {
     cors: {
-      origin: '*', // Accept all origins
+      origin: '*',
       methods: ['GET', 'POST'],
       credentials: true,
     },
   });
 
+  // Initialize TimersManager
+  const roomTimerManager = RoomTimerManager.getInstance();
+  roomTimerManager.setIo(io);
+  
+  // Initialize timers for all existing rooms
+  roomTimerManager.initializeAllRoomTimers().catch(console.error);
+  
+  // Subscribe to new room creations and updates
+  roomTimerManager.subscribeToNewRooms();
+  roomTimerManager.subscribeToRoomUpdates();
+
   io.on('connection', (socket: Socket) => {
-    handleRoomEvents(socket, io);
+    console.log('Connected to socket.io', socket.id);
+    handleRoomEvents(socket);
     handleUserEvents(socket);
   });
 
   // Handle the root route
   app.get('/', (req, res) => {
-    res.sendStatus(200); // Send a 200 status code (OK)
+    res.sendStatus(200);
   });
 
   server.listen(process.env.PORT || 4000, async () => {

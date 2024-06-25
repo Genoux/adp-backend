@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import RoomTimerManager from '../services/RoomTimerManager';
-import { EndActionTrigger } from '../utils';
+import RoomTimerManager from '@/services/RoomTimerManager';
+import finishTurn from '@/utils/actions/finishTurn';
 
 
 const router = Router();
@@ -12,7 +12,7 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    await EndActionTrigger(roomid, RoomTimerManager.getInstance(), true);
+    await finishTurn(roomid, RoomTimerManager.getInstance());
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {
     console.error('Error setting waiting phase:', error);
