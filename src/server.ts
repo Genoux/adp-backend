@@ -1,5 +1,5 @@
 import { createServer } from 'http';
-import api from '@/api';
+import api from './api';
 import handleRoomEvents from '@/events/roomEvents';
 import handleUserEvents from '@/events/userEvents';
 import startRoomCleanupService from '@/helpers/cleanupRoomsCron';
