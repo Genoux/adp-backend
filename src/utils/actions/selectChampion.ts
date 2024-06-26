@@ -32,9 +32,11 @@ const updateHeroSelectionInPool = (
     };
   });
 
+  //TODO: IF we trigger a sql function to already set the id we might not need to update the id here
 const updateTeamHeroSelection = (heroes: Hero[], hero?: Hero): void => {
   const index = heroes.findIndex((h) => h !== null && !h.selected);
   if (index !== -1) {
+    console.log(heroes[index]);
     heroes[index] = {
       id: hero?.id || null,
       name: hero?.name || null,
