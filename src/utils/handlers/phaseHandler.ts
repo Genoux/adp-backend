@@ -13,7 +13,7 @@ export const setWaitingPhase = async (roomId: string) => {
 
   await supabaseQuery<TeamData[]>(
     'teams',
-    (q) => q.update({ canSelect: false }).eq('room', roomId),
+    (q) => q.update({ can_select: false }).eq('room', roomId),
     'Error fetching teams data in phaseHandler.ts'
   );
 };
@@ -30,7 +30,7 @@ export const setPlanningPhase = async (roomId: string) => {
   await supabaseQuery<TeamData[]>(
     'teams',
     (q) =>
-      q.update({ canSelect: false, clicked_hero: null }).eq('room', roomId),
+      q.update({ can_select: false, clicked_hero: null }).eq('room', roomId),
     'Error fetching teams data in phaseHandler.ts'
   );
 };
@@ -48,7 +48,7 @@ export async function setDraftPhase(roomId: string): Promise<void> {
     'teams',
     (q) =>
       q
-        .update({ isturn: true, canSelect: true })
+        .update({ is_turn: true, can_select: true })
         .eq('room', roomId)
         .eq('color', 'blue'),
     'Error fetching teams data blue in phaseHandler.ts'
@@ -58,7 +58,7 @@ export async function setDraftPhase(roomId: string): Promise<void> {
     'teams',
     (q) =>
       q
-        .update({ isturn: false, canSelect: false })
+        .update({ is_turn: false, can_select: false })
         .eq('room', roomId)
         .eq('color', 'red'),
     'Error fetching teams data red in phaseHandler.ts'
@@ -68,7 +68,7 @@ export async function setDraftPhase(roomId: string): Promise<void> {
 export const setDonePhase = async (roomId: string) => {
   await supabase
   .from('teams')
-  .update({ isturn: false, canSelect: false, clicked_hero: null, ready: false })
+  .update({ is_turn: false, can_select: false, clicked_hero: null, ready: false })
     .eq('room', roomId);
   
   await sleep(2000);

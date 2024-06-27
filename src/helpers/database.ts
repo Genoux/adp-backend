@@ -15,9 +15,9 @@ const getActiveTeamData = async (roomID: string) => {
     'teams',
     (q) =>
       q
-        .select('id, isturn, heroes_selected, heroes_ban, clicked_hero')
+        .select('id, is_turn, heroes_selected, heroes_ban, clicked_hero')
         .eq('room', roomID)
-        .eq('isturn', true)
+        .eq('is_turn', true)
         .single(),
     'Error fetching team data'
   );
@@ -36,7 +36,7 @@ export const getActiveTeamWithRoom = async (
       cycle: roomData.cycle,
       heroes_pool: roomData.heroes_pool,
       team_id: teamData.id,
-      isturn: teamData.isturn,
+      is_turn: teamData.is_turn,
       heroes_selected: teamData.heroes_selected,
       heroes_ban: teamData.heroes_ban,
       clicked_hero: teamData.clicked_hero,

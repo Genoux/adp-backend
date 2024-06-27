@@ -28,12 +28,12 @@ type Room = {
   cycle: number;
 };
 
-// from the team where room is isturn set conSelect
+// from the team where room is is_turn set conSelect
 export async function syncUserTurn(roomid: string, teamid: string) {
   try {
     await supabaseQuery<TeamData[]>(
       'teams',
-      (q) => q.update({ canSelect: true }).eq('id', teamid).eq('isturn', true),
+      (q) => q.update({ can_select: true }).eq('id', teamid).eq('is_turn', true),
       'Error fetching teams data in draftHandler.ts'
     );
 

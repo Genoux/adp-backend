@@ -7,8 +7,6 @@ import { updateTurn } from '../../utils/handlers/draftHandler';
 
 const endAction = async (activeTeam: Data) => {
   await selectChampion(activeTeam, activeTeam.status as DraftAction);
-
-
 };
 
 const finishTurn = async (
@@ -17,8 +15,8 @@ const finishTurn = async (
 ) => {
   await supabaseQuery<TeamData[]>(
     'teams',
-    (q) => q.update({ canSelect: false }).eq('room', roomID),
-    'Error updating canSelect in endActionTrigger.ts'
+    (q) => q.update({ can_select: false }).eq('room', roomID),
+    'Error updating can_select in endActionTrigger.ts'
   );
 
   roomTimerManager.cancelTargetAchieved(roomID);
@@ -47,7 +45,7 @@ const finishTurn = async (
         'teams',
         (q) =>
           q
-            .update({ isturn: true, canSelect: true, clicked_hero: null })
+            .update({ is_turn: true, can_select: true, clicked_hero: null })
             .eq('room', roomID)
             .eq('color', turn.teamColor),
         'Error updating turn for active team in updateTurnAndRestartTimer.ts'
@@ -56,7 +54,7 @@ const finishTurn = async (
         'teams',
         (q) =>
           q
-            .update({ isturn: false, clicked_hero: null })
+            .update({ is_turn: false, clicked_hero: null })
             .eq('room', roomID)
             .eq('color', otherColor),
         'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'

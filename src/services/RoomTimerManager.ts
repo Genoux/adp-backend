@@ -1,7 +1,7 @@
 import supabaseQuery from '../helpers/supabaseQuery';
 import supabase from '../supabase';
 import { RoomData } from '../types/global';
-import finisTurn from '..//utils/actions/finishTurn';
+import finis_turn from '..//utils/actions/finishTurn';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
@@ -181,7 +181,7 @@ class RoomTimerManager {
     });
 
     this.addTimerEventListeners(timer, roomId, async () => {
-      await finisTurn(roomId, this);
+      await finis_turn(roomId, this);
     });
   }
 

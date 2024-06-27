@@ -10,7 +10,7 @@ export type Data = {
   cycle: number;
   heroes_pool: Hero[];
   team_id: number;
-  isturn: boolean;
+  is_turn: boolean;
   heroes_selected: Hero[];
   heroes_ban: Hero[];
   clicked_hero: string | null;
@@ -26,7 +26,7 @@ export type RoomData = {
 
 export type TeamData = {
   id: number;
-  isturn: boolean;
+  is_turn: boolean;
   heroes_selected: Hero[];
   heroes_ban: Hero[];
   clicked_hero: string | null;
