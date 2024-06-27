@@ -2,6 +2,7 @@ import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
 import supabase from '../../supabase';
 import { RoomData, TeamData } from '../../types/global';
+import sleep from '../../helpers/sleep';
 
 export const setWaitingPhase = async (roomId: string) => {
   await supabaseQuery<RoomData[]>(
@@ -65,10 +66,19 @@ export async function setDraftPhase(roomId: string): Promise<void> {
 }
 
 export const setDonePhase = async (roomId: string) => {
+  await supabase
+  .from('teams')
+  .update({ isturn: false, canSelect: false, clicked_hero: null, ready: false })
+    .eq('room', roomId);
+  
+  await sleep(2000);
+  
+  
   const { error } = await supabase
     .from('rooms')
     .update({ status: 'done', ready: false })
     .eq('id', roomId);
+
 
   if (error) {
     console.error('Error updating room phase:', error);

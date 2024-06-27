@@ -49,7 +49,6 @@ export async function syncUserTurn(roomid: string, teamid: string) {
 export async function updateTurn(room: Room) {
   try {
     if (room.cycle === 16) {
-      await sleep(2000);
       await setDonePhase(room.room_id);
       return;
     }
