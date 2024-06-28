@@ -1,11 +1,13 @@
 import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
-import { RoomData } from '../types/global';
+import { Database } from '../types/supabase';
 import cronstrue from 'cronstrue';
 import { subHours } from 'date-fns';
 import cron from 'node-cron';
 
 const ROOM_AGE_LIMIT = 24;
+
+type Room = Database['public']['Tables']['rooms']['Row'];
 
 async function cleanupOldRooms() {
   const roomTimerManager = RoomTimerManager.getInstance();
@@ -13,7 +15,7 @@ async function cleanupOldRooms() {
 
   try {
     // Fetch old rooms
-    const oldRooms = await supabaseQuery<RoomData[]>(
+    const oldRooms = await supabaseQuery<Room[]>(
       'rooms',
       (q) =>
         q

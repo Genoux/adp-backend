@@ -1,74 +1,77 @@
 import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
 import supabase from '../../supabase';
-import { RoomData, TeamData } from '../../types/global';
+import { Database } from '../../types/supabase';
 import sleep from '../../helpers/sleep';
 
-export const setWaitingPhase = async (roomId: string) => {
-  await supabaseQuery<RoomData[]>(
+type Team = Database['public']['Tables']['teams']['Row'];
+type Room = Database['public']['Tables']['rooms']['Row'];
+
+export const setWaitingPhase = async (roomId: number) => {
+  await supabaseQuery<Room[]>(
     'rooms',
     (q) => q.update({ status: 'waiting', ready: false }).eq('id', roomId),
     'Error fetching rooms data in phaseHandler.ts'
   );
 
-  await supabaseQuery<TeamData[]>(
+  await supabaseQuery<Team[]>(
     'teams',
-    (q) => q.update({ canSelect: false }).eq('room', roomId),
+    (q) => q.update({ can_select: false }).eq('room_id', roomId),
     'Error fetching teams data in phaseHandler.ts'
   );
 };
 
-export const setPlanningPhase = async (roomId: string) => {
+export const setPlanningPhase = async (roomId: number) => {
   RoomTimerManager.getInstance().stopTimer(roomId);
 
-  await supabaseQuery<RoomData[]>(
+  await supabaseQuery<Room[]>(
     'rooms',
     (q) => q.update({ status: 'planning', ready: true }).eq('id', roomId),
     'Error fetching rooms data in phaseHandler.ts'
   );
 
-  await supabaseQuery<TeamData[]>(
+  await supabaseQuery<Team[]>(
     'teams',
     (q) =>
-      q.update({ canSelect: false, clicked_hero: null }).eq('room', roomId),
+      q.update({ can_select: false }).eq('room_id', roomId),
     'Error fetching teams data in phaseHandler.ts'
   );
 };
 
-export async function setDraftPhase(roomId: string): Promise<void> {
+export async function setDraftPhase(roomId: number): Promise<void> {
   RoomTimerManager.getInstance().stopLobbyTimer(roomId);
 
-  await supabaseQuery<RoomData[]>(
+  await supabaseQuery<Room[]>(
     'rooms',
     (q) => q.update({ status: 'ban', cycle: 1, ready: true }).eq('id', roomId),
     'Error fetching rooms data in phaseHandler.ts'
   );
 
-  await supabaseQuery<TeamData[]>(
+  await supabaseQuery<Team[]>(
     'teams',
     (q) =>
       q
-        .update({ isturn: true, canSelect: true })
-        .eq('room', roomId)
+        .update({ is_turn: true, can_select: true })
+        .eq('room_id', roomId)
         .eq('color', 'blue'),
     'Error fetching teams data blue in phaseHandler.ts'
   );
 
-  await supabaseQuery<TeamData[]>(
+  await supabaseQuery<Team[]>(
     'teams',
     (q) =>
       q
-        .update({ isturn: false, canSelect: false })
-        .eq('room', roomId)
+        .update({ is_turn: false, can_select: false })
+        .eq('room_id', roomId)
         .eq('color', 'red'),
     'Error fetching teams data red in phaseHandler.ts'
   );
 }
 
-export const setDonePhase = async (roomId: string) => {
+export const setDonePhase = async (roomId: number) => {
   await supabase
   .from('teams')
-  .update({ isturn: false, canSelect: false, clicked_hero: null, ready: false })
+  .update({ is_turn: false, can_select: false, ready: false })
     .eq('room', roomId);
   
   await sleep(2000);

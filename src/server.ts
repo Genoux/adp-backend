@@ -16,7 +16,6 @@ export const startServer = () => {
     cors({
       origin: '*',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
       optionsSuccessStatus: 204,
     })
   );

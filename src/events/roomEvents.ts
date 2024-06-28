@@ -1,18 +1,21 @@
 import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
-import { RoomData } from '../types/global';
 import { syncUserTurn } from '../utils/handlers/draftHandler';
 import { Socket } from 'socket.io';
+import { Database } from '../types/supabase';
+
+type Room = Database['public']['Tables']['rooms']['Row'];
 
 const handleRoomEvents = (socket: Socket) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
   socket.on(
     'joinRoom',
-    async ({ roomid, teamid }: { roomid: string; teamid: string }) => {
-      socket.join(roomid);
+    async ({ roomid, teamid }: { roomid: number; teamid: number }) => {
+      console.log(`User ${socket.id} joined room ${roomid}`);
+      socket.join(JSON.stringify(roomid));
 
-      const room = await supabaseQuery<RoomData>(
+      const room = await supabaseQuery<Room>(
         'rooms',
         (q) => q.select('*').eq('id', roomid).single(),
         'Error fetching room data in roomEvents.ts'

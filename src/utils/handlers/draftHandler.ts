@@ -1,8 +1,11 @@
 import sleep from '../../helpers/sleep';
 import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
-import { RoomData, TeamData } from '../../types/global';
+import { Data } from '../../types/global';
 import { setDonePhase } from '../../utils/handlers/phaseHandler';
+import { Database } from '../../types/supabase';
+
+type Room = Database['public']['Tables']['rooms']['Row'];
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -23,17 +26,11 @@ export const turnSequence = [
   { phase: 'select', teamColor: 'red', cycle: 16 },
 ];
 
-type Room = {
-  room_id: string;
-  cycle: number;
-};
-
-// from the team where room is isturn set conSelect
-export async function syncUserTurn(roomid: string, teamid: string) {
+export async function syncUserTurn(roomid: number, teamid: number) {
   try {
-    await supabaseQuery<TeamData[]>(
+    await supabaseQuery<Room[]>(
       'teams',
-      (q) => q.update({ canSelect: true }).eq('id', teamid).eq('isturn', true),
+      (q) => q.update({ can_select: true }).eq('id', teamid).eq('is_turn', true),
       'Error fetching teams data in draftHandler.ts'
     );
 
@@ -46,7 +43,7 @@ export async function syncUserTurn(roomid: string, teamid: string) {
   }
 }
 
-export async function updateTurn(room: Room) {
+export async function updateTurn(room: Data) {
   try {
     if (room.cycle === 16) {
       await setDonePhase(room.room_id);
@@ -57,7 +54,7 @@ export async function updateTurn(room: Room) {
     });
 
     if (turn) {
-      await supabaseQuery<RoomData[]>(
+      await supabaseQuery<Room[]>(
         'rooms',
         (q) =>
           q
