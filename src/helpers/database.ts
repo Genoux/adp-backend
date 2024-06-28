@@ -1,21 +1,28 @@
+//TODO: Clean to not use custom Data type
+
 import supabase from '../supabase';
-import { Data, Hero, RoomData, TeamData } from '../types/global';
+import { Database } from '../types/supabase';
+import { Data } from '../types/global';
 import supabaseQuery from '../helpers/supabaseQuery';
 
-const getRoomData = async (roomID: string) => {
-  return await supabaseQuery<RoomData>(
+type Room = Database['public']['Tables']['rooms']['Row'];
+type Team = Database['public']['Tables']['teams']['Row'];
+type Hero = Database["public"]["CompositeTypes"]["hero"];
+
+const getRoomData = async (roomID: number) => {
+  return await supabaseQuery<Room>(
     'rooms',
     (q) => q.select('id, status, cycle, heroes_pool').eq('id', roomID).single(),
     'Error fetching room data'
   );
 };
 
-const getActiveTeamData = async (roomID: string) => {
-  return await supabaseQuery<TeamData>(
+const getActiveTeamData = async (roomID: number) => {
+  return await supabaseQuery<Team>(
     'teams',
     (q) =>
       q
-        .select('id, is_turn, heroes_selected, heroes_ban, clicked_hero')
+        .select('id, is_turn, heroes_selected, heroes_ban')
         .eq('room', roomID)
         .eq('is_turn', true)
         .single(),
@@ -24,7 +31,7 @@ const getActiveTeamData = async (roomID: string) => {
 };
 
 export const getActiveTeamWithRoom = async (
-  roomID: string
+  roomID: number
 ): Promise<Data | null> => {
   try {
     const roomData = await getRoomData(roomID);
@@ -34,12 +41,11 @@ export const getActiveTeamWithRoom = async (
       room_id: roomData.id,
       status: roomData.status,
       cycle: roomData.cycle,
-      heroes_pool: roomData.heroes_pool,
       team_id: teamData.id,
       is_turn: teamData.is_turn,
-      heroes_selected: teamData.heroes_selected,
-      heroes_ban: teamData.heroes_ban,
-      clicked_hero: teamData.clicked_hero,
+      heroes_pool: roomData.heroes_pool as Hero[],
+      heroes_selected: teamData.heroes_selected as Hero[],
+      heroes_ban: teamData.heroes_ban as Hero[],
     };
   } catch (error) {
     console.error('Error in getActiveTeamWithRoom:', (error as Error).message);
@@ -48,7 +54,7 @@ export const getActiveTeamWithRoom = async (
 };
 
 const updateDatabase = async (
-  roomId: string,
+  roomId: number,
   teamId: number,
   heroesSelected: Hero[],
   heroesBan: Hero[],
