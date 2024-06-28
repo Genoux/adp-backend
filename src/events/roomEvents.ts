@@ -11,7 +11,7 @@ const handleRoomEvents = (socket: Socket) => {
 
   socket.on(
     'joinRoom',
-    async ({ roomid, teamid }: { roomid: number; teamid: number }) => {
+    async ({ roomid }: { roomid: number; teamid: number }) => {
       console.log(`User ${socket.id} joined room ${roomid}`);
       socket.join(JSON.stringify(roomid));
 
@@ -33,7 +33,7 @@ const handleRoomEvents = (socket: Socket) => {
 
       if (!room.ready) return;
       //await syncTimers(roomid, room.status);
-      await syncUserTurn(roomid, teamid);
+      await syncUserTurn(roomid);
     }
   );
 

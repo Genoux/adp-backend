@@ -1,7 +1,7 @@
 import supabaseQuery from '../helpers/supabaseQuery';
 import supabase from '../supabase';
 import { Database } from '../types/supabase';
-import finis_turn from '..//utils/actions/finishTurn';
+import finishTurn from '../utils/actions/finishTurn';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
@@ -11,14 +11,13 @@ type Room = Database['public']['Tables']['rooms']['Row'];
 interface RoomTimer {
   countdownTimer: Timer;
   countdownTimerLobby: Timer;
-  id: number;
   targetAchievedTimeout?: NodeJS.Timeout;
 }
 
 class RoomTimerManager {
   private static instance: RoomTimerManager;
-  private roomTimers: Record<string, RoomTimer> = {};
-  private roomLocks: Record<string, boolean> = {};
+  private roomTimers: Map<number, RoomTimer> = new Map();
+  private roomLocks: Map<number, boolean> = new Map();
   private io: Server | null = null;
 
   private constructor() {
@@ -43,11 +42,7 @@ class RoomTimerManager {
       'Error fetching all rooms in initializeAllRoomTimers'
     );
 
-    if (rooms) {
-      for (const room of rooms) {
-        this.initializeRoomTimer(room);
-      }
-    }
+    rooms?.forEach(this.initializeRoomTimer.bind(this));
   }
 
   private initializeRoomTimer(room: Room): void {
@@ -60,13 +55,9 @@ class RoomTimerManager {
       .channel('room_insertions')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'rooms',
-        },
-        (payload: { new: Room; }) => {
-          const newRoom = payload.new as Room;
+        { event: 'INSERT', schema: 'public', table: 'rooms' },
+        (payload: { new: Room }) => {
+          const newRoom = payload.new;
           console.log('New room', newRoom.id);
           this.initializeRoomTimer(newRoom);
           console.log(`Initialized timer for new room ${newRoom.id}`);
@@ -80,13 +71,9 @@ class RoomTimerManager {
       .channel('room_updates')
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rooms',
-        },
-        (payload: { new: Room; }) => {
-          const updatedRoom = payload.new as Room;
+        { event: 'UPDATE', schema: 'public', table: 'rooms' },
+        (payload: { new: Room }) => {
+          const updatedRoom = payload.new;
           this.handleRoomStatusChange(updatedRoom);
         }
       )
@@ -110,15 +97,13 @@ class RoomTimerManager {
     }
   }
 
-  public listTimers(): Record<string, RoomTimer> {
-    return { ...this.roomTimers };
+  public listTimers(): Map<number, RoomTimer> {
+    return new Map(this.roomTimers);
   }
 
   public deleteTimer(roomId: number): void {
-    if (this.hasTimer(roomId)) {
-      delete this.roomTimers[roomId];
-      delete this.roomLocks[roomId];
-    }
+    this.roomTimers.delete(roomId);
+    this.roomLocks.delete(roomId);
   }
 
   private addTimerEventListeners(
@@ -137,10 +122,9 @@ class RoomTimerManager {
   private handleSecondsUpdated(timer: Timer, roomId: number): void {
     if (!this.io) return;
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(
-      2,
-      '0'
-    )}:${String(timeValues.seconds).padStart(2, '0')}`;
+    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(
+      timeValues.seconds
+    ).padStart(2, '0')}`;
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
   }
 
@@ -148,18 +132,14 @@ class RoomTimerManager {
     roomId: number,
     onTimerTargetAchieved?: () => Promise<void>
   ): Promise<void> {
-    const roomTimer = this.roomTimers[roomId];
-    if (!roomTimer) return;
+    const roomTimer = this.roomTimers.get(roomId);
+    if (!roomTimer || !onTimerTargetAchieved) return;
 
-    if (onTimerTargetAchieved) {
-      roomTimer.targetAchievedTimeout = setTimeout(async () => {
-        await onTimerTargetAchieved();
-      }, 2000);
-    }
+    roomTimer.targetAchievedTimeout = setTimeout(onTimerTargetAchieved, 2000);
   }
 
   public hasTimer(roomId: number): boolean {
-    return roomId in this.roomTimers;
+    return this.roomTimers.has(roomId);
   }
 
   public initTimer(roomId: number): void {
@@ -172,23 +152,17 @@ class RoomTimerManager {
 
     const timer = new Timer();
     const timerLobby = new Timer();
-    this.roomTimers[roomId] = {
+    this.roomTimers.set(roomId, {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
-      id: roomId,
-    };
-
-    this.addTimerEventListeners(timerLobby, roomId, async () => {
-      await setDraftPhase(roomId);
     });
 
-    this.addTimerEventListeners(timer, roomId, async () => {
-      await finis_turn(roomId, this);
-    });
+    this.addTimerEventListeners(timerLobby, roomId, () => setDraftPhase(roomId));
+    this.addTimerEventListeners(timer, roomId, () => finishTurn(roomId, this));
   }
 
   public startLobbyTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
+    const roomTimer = this.roomTimers.get(roomId);
     if (roomTimer) {
       roomTimer.countdownTimerLobby.start({
         countdown: true,
@@ -198,7 +172,7 @@ class RoomTimerManager {
   }
 
   public startTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
+    const roomTimer = this.roomTimers.get(roomId);
     if (roomTimer) {
       roomTimer.countdownTimer.start({
         countdown: true,
@@ -208,50 +182,38 @@ class RoomTimerManager {
   }
 
   public cancelTargetAchieved(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
+    const roomTimer = this.roomTimers.get(roomId);
+    if (roomTimer?.targetAchievedTimeout) {
       clearTimeout(roomTimer.targetAchievedTimeout);
     }
   }
 
   public resetTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.reset();
-    }
+    this.roomTimers.get(roomId)?.countdownTimer.reset();
   }
 
   public resetLobbyTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimerLobby.reset();
-    }
+    this.roomTimers.get(roomId)?.countdownTimerLobby.reset();
   }
 
   public stopTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimer.stop();
-    }
+    this.roomTimers.get(roomId)?.countdownTimer.stop();
   }
 
   public stopLobbyTimer(roomId: number): void {
-    const roomTimer = this.roomTimers[roomId];
-    if (roomTimer) {
-      roomTimer.countdownTimerLobby.stop();
-    }
+    this.roomTimers.get(roomId)?.countdownTimerLobby.stop();
   }
 
   public lockRoom(roomId: number): void {
-    this.roomLocks[roomId] = true;
+    this.roomLocks.set(roomId, true);
   }
 
   public unlockRoom(roomId: number): void {
-    this.roomLocks[roomId] = false;
+    this.roomLocks.set(roomId, false);
   }
 
   public isLocked(roomId: number): boolean {
-    return this.roomLocks[roomId];
+    return this.roomLocks.get(roomId) || false;
   }
 }
 

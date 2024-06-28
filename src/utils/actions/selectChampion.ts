@@ -60,8 +60,7 @@ export const selectChampion = async (
         data.heroes_ban,
         updatedHeroesPool
       );
-
-      console.log(`Updated ${action} hero:`, updatedHero);
+      
     } else {
       console.log(`No hero updated for ${action} action`);
     }

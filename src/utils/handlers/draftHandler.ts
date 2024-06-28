@@ -26,11 +26,11 @@ export const turnSequence = [
   { phase: 'select', teamColor: 'red', cycle: 16 },
 ];
 
-export async function syncUserTurn(roomid: number, teamid: number) {
+export async function syncUserTurn(roomid: number) {
   try {
     await supabaseQuery<Room[]>(
       'teams',
-      (q) => q.update({ can_select: true }).eq('id', teamid).eq('is_turn', true),
+      (q) => q.update({ can_select: true }).eq('room_id', roomid).eq('is_turn', true),
       'Error fetching teams data in draftHandler.ts'
     );
 
