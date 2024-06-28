@@ -20,7 +20,7 @@ const finishTurn = async (
 ) => {
   await supabaseQuery<Team[]>(
     'teams',
-    (q) => q.update({ can_select: false }).eq('room', roomID),
+    (q) => q.update({ can_select: false }).eq('room_id', roomID),
     'Error updating can_select in endActionTrigger.ts'
   );
 
@@ -51,7 +51,7 @@ const finishTurn = async (
         (q) =>
           q
             .update({ is_turn: true, can_select: true })
-            .eq('room', roomID)
+            .eq('room_id', roomID)
             .eq('color', turn.teamColor),
         'Error updating turn for active team in updateTurnAndRestartTimer.ts'
       );
@@ -60,7 +60,7 @@ const finishTurn = async (
         (q) =>
           q
             .update({ is_turn: false })
-            .eq('room', roomID)
+            .eq('room_id', roomID)
             .eq('color', otherColor),
         'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'
       );

@@ -23,7 +23,7 @@ const getActiveTeamData = async (roomID: number) => {
     (q) =>
       q
         .select('id, is_turn, heroes_selected, heroes_ban')
-        .eq('room', roomID)
+        .eq('room_id', roomID)
         .eq('is_turn', true)
         .single(),
     'Error fetching team data'
