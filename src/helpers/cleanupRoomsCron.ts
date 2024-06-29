@@ -20,10 +20,10 @@ async function cleanupOldRooms() {
       (q) =>
         q
           .select('id, created_at')
-          .lt('created_at', cutoffTime.toISOString())
-          .eq('status', 'done'),
+          .lt('created_at', cutoffTime.toISOString()),
       'Error fetching old rooms'
     );
+    
 
     if (!oldRooms || oldRooms.length === 0) {
       console.log('No old rooms to clean up');
@@ -41,7 +41,7 @@ async function cleanupOldRooms() {
         // Delete teams associated with the room
         await supabaseQuery(
           'teams',
-          (q) => q.delete().eq('room', room.id),
+          (q) => q.delete().eq('room_id', room.id),
           'Error deleting teams'
         );
 

@@ -1,70 +1,82 @@
 import { updateDatabase } from '../../helpers/database';
-import { Data, DraftAction, Hero } from '../../types/global';
+import { Database } from '../../types/supabase';
 
-const getRandomUnselectedHero = (heroesPool: Hero[]): Hero | null => {
-  const unselectedHeroes = heroesPool.filter((hero) => hero && !hero.selected);
-  if (unselectedHeroes.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * unselectedHeroes.length);
-  return unselectedHeroes[randomIndex];
+type Hero = Database["public"]["CompositeTypes"]["hero"];
+
+type Room = Database['public']['Tables']['rooms']['Row'] & {
+  heroes_pool: Hero[];
 };
 
-const updateHeroInList = (heroList: Hero[], action: DraftAction, heroesPool: Hero[]): Hero | null => {
-  const index = heroList.findIndex((h) => h !== null && !h.selected);
+type Team = Database['public']['Tables']['teams']['Row'] & {
+  heroes_ban: Hero[];
+  heroes_selected: Hero[];
+};
+
+const getRandomUnselectedHero = (heroesPool: Hero[]): Hero | null => {
+  const unselectedHeroes = heroesPool.filter(hero => hero && !hero.selected);
+  return unselectedHeroes.length ? unselectedHeroes[Math.floor(Math.random() * unselectedHeroes.length)] : null;
+};
+
+const updateHeroLists = (room: Room, team: Team): { updatedRoom: Room, updatedTeam: Team } | null => {
+  const heroList = room.status === 'ban' ? team.heroes_ban : team.heroes_selected;
+  const index = heroList.findIndex((h: Hero) => h && !h.selected);
+
   if (index === -1) return null;
 
   const currentHero = heroList[index];
   if (!currentHero) return null;
 
-  let updatedHero: Hero = { ...currentHero, selected: true };
+  let updatedHero: Hero;
 
-  if (action === 'ban') {
+  if (room.status === 'ban') {
     updatedHero = {
       id: currentHero.id,
       name: currentHero.name,
       selected: true
     };
-  } else if (action === 'select' && heroList[index]?.id === null) {
-    const randomHero = getRandomUnselectedHero(heroesPool);
-    if (randomHero) {
-      updatedHero = { ...randomHero, selected: true };
+  } else {
+    if (currentHero.id) {
+      updatedHero = {
+        id: currentHero.id,
+        name: currentHero.name,
+        selected: true
+      };
+    } else {
+      const randomHero = getRandomUnselectedHero(room.heroes_pool);
+      if (!randomHero) return null;
+      updatedHero = {
+        id: randomHero.id,
+        name: randomHero.name,
+        selected: true
+      };
     }
   }
 
-  heroList[index] = updatedHero;
-  return updatedHero;
-};
-
-const updateHeroSelectionInPool = (heroesPool: Hero[], selectedHero: Hero | null): Hero[] => {
-  return heroesPool.map((hero) =>
-    hero && hero.id === selectedHero?.id
-      ? { ...hero, selected: true }
-      : hero
+  const updatedHeroesPool = room.heroes_pool.map(hero =>
+    (hero && hero.id === updatedHero.id) ? { ...hero, selected: true } : hero
   );
+
+  heroList[index] = updatedHero;
+
+  return {
+    updatedRoom: { ...room, heroes_pool: updatedHeroesPool },
+    updatedTeam: {
+      ...team,
+      [room.status === 'ban' ? 'heroes_ban' : 'heroes_selected']: heroList
+    }
+  };
 };
 
-export const selectChampion = async (
-  data: Data,
-  action: DraftAction
-): Promise<void> => {
+export const selectChampion = async (room: Room, team: Team): Promise<void> => {
   try {
-    const heroList = action === 'ban' ? data.heroes_ban : data.heroes_selected;
-    const updatedHero = updateHeroInList(heroList, action, data.heroes_pool);
-
-    if (updatedHero) {
-      const updatedHeroesPool = updateHeroSelectionInPool(data.heroes_pool, updatedHero);
-
-      await updateDatabase(
-        data.room_id,
-        data.team_id,
-        data.heroes_selected,
-        data.heroes_ban,
-        updatedHeroesPool
-      );
-      
+    const result = updateHeroLists(room, team);
+    if (result) {
+      const { updatedRoom, updatedTeam } = result;
+      await updateDatabase(updatedRoom, updatedTeam);
     } else {
-      console.log(`No hero updated for ${action} action`);
+      console.log('No hero updated');
     }
   } catch (error) {
-    console.error(`Error in ${action.toLowerCase()}Champion:`, error);
+    console.error('Error:', error);
   }
 };

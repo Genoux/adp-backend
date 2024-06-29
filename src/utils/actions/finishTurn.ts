@@ -1,17 +1,14 @@
-// TODO: Cleanup getActiveTeamWithRoom
-
-import { getActiveTeamWithRoom } from '../../helpers/database';
+import { getRoomData, getTeamData } from '../../helpers/database';
 import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
-import { Data, DraftAction } from '../../types/global';
 import { Database } from '../../types/supabase';
 import { selectChampion } from '../../utils/actions/selectChampion';
 import { updateTurn } from '../../utils/handlers/draftHandler';
 
-type Team = Database['public']['Tables']['teams']['Row'];
-
-const endAction = async (activeTeam: Data) => {
-  await selectChampion(activeTeam, activeTeam.status as DraftAction);
+type Hero = Database["public"]["CompositeTypes"]["hero"];
+type Team = Database['public']['Tables']['teams']['Row'] & {
+  heroes_ban: Hero[];
+  heroes_selected: Hero[];
 };
 
 const finishTurn = async (
@@ -34,37 +31,22 @@ const finishTurn = async (
   roomTimerManager.stopTimer(roomID);
 
   try {
-    const activeTeam = await getActiveTeamWithRoom(roomID);
-    if (!activeTeam) {
+
+    const data = {
+      room: await getRoomData(roomID),
+      team: await getTeamData(roomID),
+    }
+
+    if (!data) {
       console.log('No active team found');
       return;
     }
 
-    await endAction(activeTeam);
-    const turn = await updateTurn(activeTeam);
+    await selectChampion(data.room, data.team);
+    await updateTurn(data.room);
+
     roomTimerManager.unlockRoom(roomID);
 
-    if (turn) {
-      const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
-      await supabaseQuery<Team[]>(
-        'teams',
-        (q) =>
-          q
-            .update({ is_turn: true, can_select: true })
-            .eq('room_id', roomID)
-            .eq('color', turn.teamColor),
-        'Error updating turn for active team in updateTurnAndRestartTimer.ts'
-      );
-      await supabaseQuery<Team[]>(
-        'teams',
-        (q) =>
-          q
-            .update({ is_turn: false })
-            .eq('room_id', roomID)
-            .eq('color', otherColor),
-        'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'
-      );
-    }
   } catch (error) {
     console.error('Error in EndActionTrigger:', (error as Error).message);
   }
