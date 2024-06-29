@@ -72,7 +72,7 @@ export const setDonePhase = async (roomId: number) => {
   await supabase
   .from('teams')
   .update({ is_turn: false, can_select: false, ready: false })
-    .eq('room', roomId);
+    .eq('room_id', roomId);
   
   await sleep(2000);
   
