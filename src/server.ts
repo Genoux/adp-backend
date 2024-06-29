@@ -7,6 +7,8 @@ import RoomTimerManager from './services/RoomTimerManager';
 import cors from 'cors';
 import express from 'express';
 import { Server, Socket } from 'socket.io';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export const startServer = () => {
   const app = express();
@@ -64,9 +66,11 @@ export const startServer = () => {
     handleUserEvents(socket);
   });
 
-  // Handle the root route
+  const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+  const version = packageJson.version;
+
   app.get('/', (req, res) => {
-    res.sendStatus(200);
+    res.json({ version });
   });
 
   server.listen(process.env.PORT || 4000, async () => {

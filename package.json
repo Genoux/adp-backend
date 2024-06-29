@@ -1,7 +1,7 @@
 {
   "name": "adp-backend",
-  "version": "1.4.0",
-  "description": "",
+  "version": "1.4.2",
+  "description": "Backend for Aram Draft Pick",
   "main": "dist/index.js",
   "scripts": {
     "start": "node -r module-alias/register ./dist/index.js",
