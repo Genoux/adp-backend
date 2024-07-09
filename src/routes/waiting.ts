@@ -1,18 +1,23 @@
-import { Router } from 'express';
-import { setWaitingPhase } from '../utils/handlers/phaseHandler';
 import supabase from '../supabase';
+import { setWaitingPhase } from '../utils/handlers/phaseHandler';
+import { Router } from 'express';
 
 const router = Router();
 
 router.post('/', async (req, res) => {
-  const roomid = req.query.roomid as string;
+  const roomid = req.query.roomID as string;
   if (!roomid) {
     return res.status(400).send('roomid query parameter is required');
   }
 
+  const parsedRoomid = parseInt(roomid, 10);
+  if (isNaN(parsedRoomid)) {
+    return res.status(400).send('roomid must be a valid number');
+  }
+
   try {
-    await setWaitingPhase(roomid);
-    await supabase.from('teams').update({ ready: false }).eq('room', roomid);
+    await setWaitingPhase(parsedRoomid);
+    await supabase.from('teams').update({ ready: false }).eq('room_id', parsedRoomid);
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {
     console.error('Error setting waiting phase:', error);

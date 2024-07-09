@@ -1,85 +1,91 @@
-import supabase from '../../supabase';
+import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
+import supabase from '../../supabase';
+import { Database } from '../../types/supabase';
+import sleep from '../../helpers/sleep';
 
-export const getRoomPhase = async (roomId: string) => {
-  const { data } = await supabase
-    .from('rooms')
-    .select('status')
-    .eq('id', roomId)
-    .single();
+type Team = Database['public']['Tables']['teams']['Row'];
+type Room = Database['public']['Tables']['rooms']['Row'];
 
-  return data?.status;
+export const setWaitingPhase = async (roomId: number) => {
+  await supabaseQuery<Room[]>(
+    'rooms',
+    (q) => q.update({ status: 'waiting', ready: false }).eq('id', roomId),
+    'Error fetching rooms data in phaseHandler.ts'
+  );
+
+  await supabaseQuery<Team[]>(
+    'teams',
+    (q) => q.update({ can_select: false }).eq('room_id', roomId),
+    'Error fetching teams data in phaseHandler.ts'
+  );
+};
+
+export const setPlanningPhase = async (roomId: number) => {
+  RoomTimerManager.getInstance().stopTimer(roomId);
+
+  await supabaseQuery<Room[]>(
+    'rooms',
+    (q) => q.update({ status: 'planning', ready: true }).eq('id', roomId),
+    'Error fetching rooms data in phaseHandler.ts'
+  );
+
+  await supabaseQuery<Team[]>(
+    'teams',
+    (q) =>
+      q.update({ can_select: false }).eq('room_id', roomId),
+    'Error fetching teams data in phaseHandler.ts'
+  );
+};
+
+export async function setDraftPhase(roomId: number): Promise<void> {
+  RoomTimerManager.getInstance().stopLobbyTimer(roomId);
+
+  await supabaseQuery<Room[]>(
+    'rooms',
+    (q) => q.update({ status: 'ban', cycle: 1, ready: true }).eq('id', roomId),
+    'Error fetching rooms data in phaseHandler.ts'
+  );
+
+  await supabaseQuery<Team[]>(
+    'teams',
+    (q) =>
+      q
+        .update({ is_turn: true, can_select: true })
+        .eq('room_id', roomId)
+        .eq('color', 'blue'),
+    'Error fetching teams data blue in phaseHandler.ts'
+  );
+
+  await supabaseQuery<Team[]>(
+    'teams',
+    (q) =>
+      q
+        .update({ is_turn: false, can_select: false })
+        .eq('room_id', roomId)
+        .eq('color', 'red'),
+    'Error fetching teams data red in phaseHandler.ts'
+  );
 }
 
-export const syncTimers = async (roomId: string, phase: string) => {
-  if (phase === 'planning') {
-    RoomTimerManager.getInstance().startLobbyTimer(roomId);
-  }
-  if (phase === 'ban' || phase === 'select') {
-    RoomTimerManager.getInstance().stopLobbyTimer(roomId);
-    RoomTimerManager.getInstance().startTimer(roomId);
-  }
-  if (phase === 'done') {
-    console.log('Deleting timer for room:', roomId);
-    RoomTimerManager.getInstance().deleteTimer(roomId);
-  }
-}
-
-export const setWaitingPhase = async (roomId: string) => {
-
-    const { error: err_rooms } = await supabase.from('rooms').update({ status: 'waiting', ready: false }).eq('id', roomId);
-    const { error: err_teams } = await supabase.from('teams').update({ isturn: false, canSelect: false }).eq('room', roomId)
+export const setDonePhase = async (roomId: number) => {
+  await supabase
+  .from('teams')
+  .update({ is_turn: false, can_select: false, ready: false })
+    .eq('room_id', roomId);
   
-    if (err_rooms || err_teams) {
-      console.error('Error updating room and team phases:', err_rooms || err_teams);
-      throw err_rooms || err_teams;
-    }
-
-  RoomTimerManager.getInstance().stopLobbyTimer(roomId);
-  RoomTimerManager.getInstance().stopTimer(roomId);
-}
-
-export const setPlanningPhase = async (roomId: string) => {
-  RoomTimerManager.getInstance().stopTimer(roomId);
-
-  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'planning', ready: true }).eq('id', roomId);
-  const { error: err_teams } = await supabase.from('teams').update({ canSelect: false, clicked_hero: null }).eq('room', roomId)
-
-  if (err_rooms || err_teams) {
-    console.error('Error updating room and team phases:', err_rooms || err_teams);
-    throw err_rooms || err_teams;
-  }
-
-  RoomTimerManager.getInstance().startLobbyTimer(roomId);
- // RoomTimerManager.getInstance().resetLobbyTimer(roomId);
-  RoomTimerManager.getInstance().unlockRoom(roomId);
-
-}
-
-export async function setDraftPhase(roomId: string): Promise<void> {
-  RoomTimerManager.getInstance().stopLobbyTimer(roomId);
-
-  const { error: err_rooms } = await supabase.from('rooms').update({ status: 'ban', cycle: 1, ready: true }).eq('id', roomId);
-  const { error: err_teams } = await supabase.from('teams').update({ isturn: true, canSelect: true }).eq('room', roomId).eq('color', 'blue');
-
-  if (err_rooms || err_teams) {
-    console.error('Error updating room and team phases:', err_rooms || err_teams);
-    throw err_rooms || err_teams;
-  }
-
-  RoomTimerManager.getInstance().startTimer(roomId);
-  RoomTimerManager.getInstance().resetTimer(roomId);
-}
-
-export const setDonePhase = async (roomId: string) => {
+  await sleep(2000);
+  
+  
   const { error } = await supabase
     .from('rooms')
-    .update({ status: 'done', ready: false})
+    .update({ status: 'done', ready: false })
     .eq('id', roomId);
+
 
   if (error) {
     console.error('Error updating room phase:', error);
     throw error;
   }
-  RoomTimerManager.getInstance().deleteTimer(roomId);
-}
+  //RoomTimerManager.getInstance().deleteTimer(roomId);
+};

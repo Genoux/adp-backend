@@ -1,43 +1,45 @@
-import { Server, Socket } from 'socket.io';
+import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
-import supabase from '../supabase';
-import { syncTimers } from '../utils/handlers/phaseHandler';
 import { syncUserTurn } from '../utils/handlers/draftHandler';
-interface Ids {
-  roomid: string;
-  teamid: string;
-}
+import { Socket } from 'socket.io';
+import { Database } from '../types/supabase';
 
-export const handleRoomEvents = (socket: Socket, io: Server) => {
+type Room = Database['public']['Tables']['rooms']['Row'];
+
+const handleRoomEvents = (socket: Socket) => {
   const roomTimerManager = RoomTimerManager.getInstance();
 
-  socket.on('joinRoom', async ({ roomid, teamid }: Ids) => {
-    socket.join(roomid);
+  socket.on(
+    'joinRoom',
+    async ({ roomid }: { roomid: number; teamid: number }) => {
+      console.log(`User ${socket.id} joined room ${roomid}`);
+      socket.join(JSON.stringify(roomid));
 
-    const { data: room, error } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('id', roomid)
-      .single();
+      const room = await supabaseQuery<Room>(
+        'rooms',
+        (q) => q.select('*').eq('id', roomid).single(),
+        'Error fetching room data in roomEvents.ts'
+      );
 
-    if (error || !room) {
-      console.log(`Room ${roomid} does not exist. Deleting timer if it exists.`);
-      roomTimerManager.deleteTimer(roomid);
-      return;
+      if (!room) {
+        console.log(
+          `Room ${roomid} does not exist. Deleting timer if it exists.`
+        );
+        roomTimerManager.deleteTimer(roomid);
+        return;
+      }
+
+      socket.emit('message', `Welcome to room ${roomid}`);
+
+      if (!room.ready) return;
+      //await syncTimers(roomid, room.status);
+      await syncUserTurn(roomid);
     }
-
-    socket.emit('message', `Welcome to room ${roomid}`);
-
-    if (!roomTimerManager.hasTimer(roomid)) {
-      roomTimerManager.initTimer(roomid, io, socket);
-    }
-
-    if (!room.ready) return
-    await syncTimers(roomid, room.status);
-    await syncUserTurn(roomid, teamid);
-  });
+  );
 
   socket.on('disconnect', (reason) => {
     console.log(`User ${socket.id} disconnected because ${reason}`);
   });
 };
+
+export default handleRoomEvents;

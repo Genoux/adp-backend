@@ -128,3 +128,17 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+.env.prod
+
+# Docker
+.env
+.env.*
+!.env.example
+
+# Docker volumes
+docker-volumes/
+
+# OS-specific
+.DS_Store
+Thumbs.db

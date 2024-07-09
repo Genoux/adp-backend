@@ -1,7 +1,10 @@
-import supabase from '../../supabase';
-import { setDonePhase } from './phaseHandler';
-import sleep from '../../helpers/sleep';
+import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
+import { setDonePhase } from '../../utils/handlers/phaseHandler';
+import { Database } from '../../types/supabase';
+
+type Room = Database['public']['Tables']['rooms']['Row'];
+type Team = Database['public']['Tables']['teams']['Row'];
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -22,57 +25,64 @@ export const turnSequence = [
   { phase: 'select', teamColor: 'red', cycle: 16 },
 ];
 
-type Room = {
-  room_id: string;
-  cycle: number;
-};
-
-// from the team where room is isturn set conSelect
-export async function syncUserTurn(roomid: string, teamid: string) {
+export async function syncUserTurn(roomid: number) {
   try {
-    if(!teamid) return;
-    const { error } = await supabase
-      .from('teams')
-      .update({ canSelect: true })
-      .eq('id', teamid)
-      .eq('isturn', true);
-    
-    if (RoomTimerManager.getInstance().isLocked(roomid)) {
-        console.log('Room is locked, unlocking...');
-        RoomTimerManager.getInstance().unlockRoom(roomid);
-      }
+    await supabaseQuery<Room[]>(
+      'teams',
+      (q) => q.update({ can_select: true }).eq('room_id', roomid).eq('is_turn', true),
+      'Error fetching teams data in draftHandler.ts'
+    );
 
-    if (error) {
-      throw new Error(`Error updating team turn: ${error.message}`)
+    if (RoomTimerManager.getInstance().isLocked(roomid)) {
+      console.log('Room is locked, unlocking...');
+      RoomTimerManager.getInstance().unlockRoom(roomid);
     }
   } catch (error) {
-    console.error("Error in syncTurn:", error);
+    console.error('Error in syncTurn:', error);
   }
 }
 
 export async function updateTurn(room: Room) {
   try {
     if (room.cycle === 16) {
-      await sleep(2000);
-      await setDonePhase(room.room_id);
-      return
+      await setDonePhase(room.id);
+      return;
     }
-    const turn = turnSequence.find(turn => { return turn.cycle === room.cycle + 1 });
+    const turn = turnSequence.find((turn) => {
+      return turn.cycle === room.cycle + 1;
+    });
 
     if (turn) {
-      // Begin transaction for updating room and teams
-      const { error: updateRoomError } = await supabase
-        .from('rooms')
-        .update({ status: turn.phase, cycle: turn.cycle })
-        .eq('id', room.room_id)
+      await supabaseQuery<Room[]>(
+        'rooms',
+        (q) =>
+          q
+            .update({ status: turn.phase, cycle: turn.cycle })
+            .eq('id', room.id),
+        'Error fetching rooms data in draftHandler.ts'
+      );
 
-      if (updateRoomError) {
-        throw new Error(`Error updating room: ${updateRoomError.message}`);
-      }
-
-      return turn;
+      const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
+      await supabaseQuery<Team[]>(
+        'teams',
+        (q) =>
+          q
+            .update({ is_turn: true, can_select: true })
+            .eq('room_id', room.id)
+            .eq('color', turn.teamColor),
+        'Error updating turn for active team in updateTurnAndRestartTimer.ts'
+      );
+      await supabaseQuery<Team[]>(
+        'teams',
+        (q) =>
+          q
+            .update({ is_turn: false })
+            .eq('room_id', room.id)
+            .eq('color', otherColor),
+        'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'
+      );
     }
   } catch (error) {
-    console.error("Error in updateTurn:", error);
+    console.error('Error in updateTurn:', error);
   }
 }
