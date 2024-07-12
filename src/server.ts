@@ -53,8 +53,7 @@ export const startServer = () => {
   roomTimerManager.initializeAllRoomTimers().catch(console.error);
 
   // Subscribe to new room creations and updates
-  roomTimerManager.subscribeToNewRooms();
-  roomTimerManager.subscribeToRoomUpdates();
+  roomTimerManager.subscribeToRoomChanges();
 
   startRoomCleanupService().catch((error: Error) => {
     console.error('Error starting room cleanup service:', error);

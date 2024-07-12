@@ -5,7 +5,9 @@ import finishTurn from '../utils/actions/finishTurn';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
 import { Timer } from 'easytimer.js';
 import { Server } from 'socket.io';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
+type RoomPayload = RealtimePostgresChangesPayload<Room>;
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 interface RoomTimer {
@@ -50,34 +52,33 @@ class RoomTimerManager {
     this.handleRoomStatusChange(room);
   }
 
-  public subscribeToNewRooms(): void {
+  public subscribeToRoomChanges(): void {
     supabase
-      .channel('room_insertions')
+      .channel('room_changes')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'rooms' },
-        (payload: { new: Room }) => {
-          const newRoom = payload.new;
-          console.log('New room', newRoom.id);
-          this.initializeRoomTimer(newRoom);
-          console.log(`Initialized timer for new room ${newRoom.id}`);
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rooms'
+        },
+        (payload: RoomPayload) => {
+          const room = payload.new as Room;
+          if (payload.eventType === 'INSERT') {
+            this.initializeRoomTimer(room);
+            console.log(`Initialized timer for new room ${room.id}`);
+          } else if (payload.eventType === 'UPDATE') {
+            this.handleRoomStatusChange(room);
+          }
         }
       )
-      .subscribe();
-  }
-
-  public subscribeToRoomUpdates(): void {
-    supabase
-      .channel('room_updates')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'rooms' },
-        (payload: { new: Room }) => {
-          const updatedRoom = payload.new;
-          this.handleRoomStatusChange(updatedRoom);
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to room changes');
+        } else {
+          console.error('Error subscribing to room changes:', status);
         }
-      )
-      .subscribe();
+      });
   }
 
   private handleRoomStatusChange(room: Room): void {
