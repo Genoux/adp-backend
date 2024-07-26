@@ -1,3 +1,4 @@
+import sleep from '../helpers/sleep';
 import supabase from '../supabase';
 import { setPlanningPhase } from '../utils/handlers/phaseHandler';
 import { Router } from 'express';
@@ -16,9 +17,10 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    await setPlanningPhase(parsedRoomid);
     await supabase.from('teams').update({ ready: true }).eq('room_id', parsedRoomid);
     await supabase.from('rooms').update({ ready: true }).eq('id', parsedRoomid);
+
+    await setPlanningPhase(parsedRoomid);
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {
     console.error(error);
