@@ -76,7 +76,7 @@ export const setDonePhase = async (roomId: number) => {
   .update({ is_turn: false, can_select: false, ready: false })
     .eq('room_id', roomId);
   
-  await sleep(2000);
+  await sleep(3000);
   
   const { error } = await supabase
     .from('rooms')

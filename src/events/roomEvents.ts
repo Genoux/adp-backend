@@ -11,29 +11,41 @@ const handleRoomEvents = (socket: Socket) => {
 
   socket.on(
     'joinRoom',
-    async ({ roomid }: { roomid: number; teamid: number }) => {
-      console.log(`User ${socket.id} joined room ${roomid}`);
-      socket.join(JSON.stringify(roomid));
-
-      const room = await supabaseQuery<Room>(
-        'rooms',
-        (q) => q.select('*').eq('id', roomid).single(),
-        'Error fetching room data in roomEvents.ts'
-      );
-
-      if (!room) {
-        console.log(
-          `Room ${roomid} does not exist. Deleting timer if it exists.`
-        );
-        roomTimerManager.deleteTimer(roomid);
+    async ({ roomid }: { roomid: number | undefined }) => {
+      if (roomid === undefined) {
+        console.error('Received undefined roomid in joinRoom event');
+        socket.emit('error', 'Invalid room ID');
         return;
       }
 
-      socket.emit('message', `Welcome to room ${roomid}`);
+      console.log(`User ${socket.id} joined room ${roomid}`);
+      socket.join(JSON.stringify(roomid));
 
-      if (!room.ready) return;
-      //await syncTimers(roomid, room.status);
-      await syncUserTurn(roomid);
+      try {
+        const room = await supabaseQuery<Room>(
+          'rooms',
+          (q) => q.select('*').eq('id', roomid).single(),
+          'Error fetching room data in roomEvents.ts'
+        );
+
+        if (!room) {
+          console.log(
+            `Room ${roomid} does not exist. Deleting timer if it exists.`
+          );
+          roomTimerManager.deleteTimer(roomid);
+          socket.emit('error', 'Room not found');
+          return;
+        }
+
+        socket.emit('message', `Welcome to room ${roomid}`);
+
+        if (!room.ready) return;
+
+        await syncUserTurn(roomid);
+      } catch (error) {
+        console.error('Error in joinRoom event:', error);
+        socket.emit('error', 'Server error occurred');
+      }
     }
   );
 
