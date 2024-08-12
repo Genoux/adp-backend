@@ -1,3 +1,4 @@
+import sleep from '../helpers/sleep';
 import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
 import { Database } from '../types/supabase';
@@ -34,6 +35,8 @@ const handleUserEvents = (socket: Socket) => {
         );
 
         console.log(`Room ${roomid} is ready!`);
+
+        await sleep(1500);
 
         await setPlanningPhase(roomid);
       }

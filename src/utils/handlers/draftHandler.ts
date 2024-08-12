@@ -45,6 +45,12 @@ export async function syncUserTurn(roomid: number) {
 export async function updateTurn(room: Room) {
   try {
     if (room.cycle === 16) {
+      // Using cycle 17 to change the UI when the game ends but it's not done view yet
+      await supabaseQuery<Room[]>(
+        'rooms',
+        (q) => q.update({ cycle: '17'}).eq('id', room.id),
+        'Error updating room cycle in updateTurn.ts'
+      );
       await setDonePhase(room.id);
       return;
     }

@@ -69,13 +69,14 @@ export async function setDraftPhase(roomId: number): Promise<void> {
 }
 
 export const setDonePhase = async (roomId: number) => {
+  RoomTimerManager.getInstance().stopTimer(roomId);
+
   await supabase
   .from('teams')
   .update({ is_turn: false, can_select: false, ready: false })
     .eq('room_id', roomId);
   
-  await sleep(2000);
-  
+  await sleep(3000);
   
   const { error } = await supabase
     .from('rooms')
@@ -87,5 +88,4 @@ export const setDonePhase = async (roomId: number) => {
     console.error('Error updating room phase:', error);
     throw error;
   }
-  //RoomTimerManager.getInstance().deleteTimer(roomId);
 };
