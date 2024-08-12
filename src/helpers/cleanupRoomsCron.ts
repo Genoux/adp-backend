@@ -1,9 +1,9 @@
-import supabaseQuery from '../helpers/supabaseQuery';
-import RoomTimerManager from '../services/RoomTimerManager';
-import { Database } from '../types/supabase';
 import cronstrue from 'cronstrue';
 import { subHours } from 'date-fns';
 import cron from 'node-cron';
+import supabaseQuery from '../helpers/supabaseQuery';
+import RoomTimerManager from '../services/RoomTimerManager';
+import { Database } from '../types/supabase';
 
 const ROOM_AGE_LIMIT = 24;
 
@@ -18,12 +18,9 @@ async function cleanupOldRooms() {
     const oldRooms = await supabaseQuery<Room[]>(
       'rooms',
       (q) =>
-        q
-          .select('id, created_at')
-          .lt('created_at', cutoffTime.toISOString()),
+        q.select('id, created_at').lt('created_at', cutoffTime.toISOString()),
       'Error fetching old rooms'
     );
-    
 
     if (!oldRooms || oldRooms.length === 0) {
       console.log('No old rooms to clean up');

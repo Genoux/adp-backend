@@ -5,7 +5,7 @@ import { Database } from '../../types/supabase';
 import { selectChampion } from '../../utils/actions/selectChampion';
 import { updateTurn } from '../../utils/handlers/draftHandler';
 
-type Hero = Database["public"]["CompositeTypes"]["hero"];
+type Hero = Database['public']['CompositeTypes']['hero'];
 type Team = Database['public']['Tables']['teams']['Row'] & {
   heroes_ban: Hero[];
   heroes_selected: Hero[];
@@ -31,11 +31,10 @@ const finishTurn = async (
   roomTimerManager.stopTimer(roomID);
 
   try {
-
     const data = {
       room: await getRoomData(roomID),
       team: await getTeamData(roomID),
-    }
+    };
 
     if (!data) {
       console.log('No active team found');
@@ -46,7 +45,6 @@ const finishTurn = async (
     await updateTurn(data.room);
 
     roomTimerManager.unlockRoom(roomID);
-
   } catch (error) {
     console.error('Error in EndActionTrigger:', (error as Error).message);
   }

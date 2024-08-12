@@ -1,7 +1,7 @@
 import supabaseQuery from '../../helpers/supabaseQuery';
 import RoomTimerManager from '../../services/RoomTimerManager';
-import { setDonePhase } from '../../utils/handlers/phaseHandler';
 import { Database } from '../../types/supabase';
+import { setDonePhase } from '../../utils/handlers/phaseHandler';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 type Team = Database['public']['Tables']['teams']['Row'];
@@ -29,7 +29,11 @@ export async function syncUserTurn(roomid: number) {
   try {
     await supabaseQuery<Room[]>(
       'teams',
-      (q) => q.update({ can_select: true }).eq('room_id', roomid).eq('is_turn', true),
+      (q) =>
+        q
+          .update({ can_select: true })
+          .eq('room_id', roomid)
+          .eq('is_turn', true),
       'Error fetching teams data in draftHandler.ts'
     );
 
@@ -48,7 +52,7 @@ export async function updateTurn(room: Room) {
       // Using cycle 17 to change the UI when the game ends but it's not done view yet
       await supabaseQuery<Room[]>(
         'rooms',
-        (q) => q.update({ cycle: '17'}).eq('id', room.id),
+        (q) => q.update({ cycle: '17' }).eq('id', room.id),
         'Error updating room cycle in updateTurn.ts'
       );
       await setDonePhase(room.id);
@@ -62,9 +66,7 @@ export async function updateTurn(room: Room) {
       await supabaseQuery<Room[]>(
         'rooms',
         (q) =>
-          q
-            .update({ status: turn.phase, cycle: turn.cycle })
-            .eq('id', room.id),
+          q.update({ status: turn.phase, cycle: turn.cycle }).eq('id', room.id),
         'Error fetching rooms data in draftHandler.ts'
       );
 

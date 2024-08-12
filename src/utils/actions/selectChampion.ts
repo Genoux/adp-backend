@@ -1,7 +1,7 @@
 import { updateDatabase } from '../../helpers/database';
 import { Database } from '../../types/supabase';
 
-type Hero = Database["public"]["CompositeTypes"]["hero"];
+type Hero = Database['public']['CompositeTypes']['hero'];
 
 type Room = Database['public']['Tables']['rooms']['Row'] & {
   heroes_pool: Hero[];
@@ -13,12 +13,18 @@ type Team = Database['public']['Tables']['teams']['Row'] & {
 };
 
 const getRandomUnselectedHero = (heroesPool: Hero[]): Hero | null => {
-  const unselectedHeroes = heroesPool.filter(hero => hero && !hero.selected);
-  return unselectedHeroes.length ? unselectedHeroes[Math.floor(Math.random() * unselectedHeroes.length)] : null;
+  const unselectedHeroes = heroesPool.filter((hero) => hero && !hero.selected);
+  return unselectedHeroes.length
+    ? unselectedHeroes[Math.floor(Math.random() * unselectedHeroes.length)]
+    : null;
 };
 
-const updateHeroLists = (room: Room, team: Team): { updatedRoom: Room, updatedTeam: Team } | null => {
-  const heroList = room.status === 'ban' ? team.heroes_ban : team.heroes_selected;
+const updateHeroLists = (
+  room: Room,
+  team: Team
+): { updatedRoom: Room; updatedTeam: Team } | null => {
+  const heroList =
+    room.status === 'ban' ? team.heroes_ban : team.heroes_selected;
   const index = heroList.findIndex((h: Hero) => h && !h.selected);
 
   if (index === -1) return null;
@@ -32,14 +38,14 @@ const updateHeroLists = (room: Room, team: Team): { updatedRoom: Room, updatedTe
     updatedHero = {
       id: currentHero.id,
       name: currentHero.name,
-      selected: true
+      selected: true,
     };
   } else {
     if (currentHero.id) {
       updatedHero = {
         id: currentHero.id,
         name: currentHero.name,
-        selected: true
+        selected: true,
       };
     } else {
       const randomHero = getRandomUnselectedHero(room.heroes_pool);
@@ -47,13 +53,13 @@ const updateHeroLists = (room: Room, team: Team): { updatedRoom: Room, updatedTe
       updatedHero = {
         id: randomHero.id,
         name: randomHero.name,
-        selected: true
+        selected: true,
       };
     }
   }
 
-  const updatedHeroesPool = room.heroes_pool.map(hero =>
-    (hero && hero.id === updatedHero.id) ? { ...hero, selected: true } : hero
+  const updatedHeroesPool = room.heroes_pool.map((hero) =>
+    hero && hero.id === updatedHero.id ? { ...hero, selected: true } : hero
   );
 
   heroList[index] = updatedHero;
@@ -62,8 +68,8 @@ const updateHeroLists = (room: Room, team: Team): { updatedRoom: Room, updatedTe
     updatedRoom: { ...room, heroes_pool: updatedHeroesPool },
     updatedTeam: {
       ...team,
-      [room.status === 'ban' ? 'heroes_ban' : 'heroes_selected']: heroList
-    }
+      [room.status === 'ban' ? 'heroes_ban' : 'heroes_selected']: heroList,
+    },
   };
 };
 

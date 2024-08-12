@@ -1,14 +1,14 @@
+import { readFileSync } from 'fs';
 import { createServer } from 'http';
+import { join } from 'path';
+import cors from 'cors';
+import express from 'express';
+import { Server, Socket } from 'socket.io';
 import api from './api';
 import handleRoomEvents from './events/roomEvents';
 import handleUserEvents from './events/userEvents';
 import startRoomCleanupService from './helpers/cleanupRoomsCron';
 import RoomTimerManager from './services/RoomTimerManager';
-import cors from 'cors';
-import express from 'express';
-import { Server, Socket } from 'socket.io';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 export const startServer = () => {
   const app = express();
@@ -65,7 +65,9 @@ export const startServer = () => {
     handleUserEvents(socket);
   });
 
-  const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+  const packageJson = JSON.parse(
+    readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+  );
   const version = packageJson.version;
 
   app.get('/', (req, res) => {

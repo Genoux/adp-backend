@@ -1,6 +1,6 @@
+import { Router } from 'express';
 import supabase from '../supabase';
 import { setWaitingPhase } from '../utils/handlers/phaseHandler';
-import { Router } from 'express';
 
 const router = Router();
 
@@ -17,7 +17,10 @@ router.post('/', async (req, res) => {
 
   try {
     await setWaitingPhase(parsedRoomid);
-    await supabase.from('teams').update({ ready: false }).eq('room_id', parsedRoomid);
+    await supabase
+      .from('teams')
+      .update({ ready: false })
+      .eq('room_id', parsedRoomid);
     res.sendStatus(200); // Send a 200 status code (OK)
   } catch (error) {
     console.error('Error setting waiting phase:', error);

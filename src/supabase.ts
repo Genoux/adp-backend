@@ -1,5 +1,5 @@
-import * as dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
 import { Database } from './types/supabase';
 
 dotenv.config();
@@ -9,8 +9,8 @@ const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 if (supabase) {

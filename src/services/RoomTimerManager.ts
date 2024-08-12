@@ -1,11 +1,11 @@
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { Timer } from 'easytimer.js';
+import { Server } from 'socket.io';
 import supabaseQuery from '../helpers/supabaseQuery';
 import supabase from '../supabase';
 import { Database } from '../types/supabase';
 import finishTurn from '../utils/actions/finishTurn';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
-import { Timer } from 'easytimer.js';
-import { Server } from 'socket.io';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type RoomPayload = RealtimePostgresChangesPayload<Room>;
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -60,7 +60,7 @@ class RoomTimerManager {
         {
           event: '*',
           schema: 'public',
-          table: 'rooms'
+          table: 'rooms',
         },
         (payload: RoomPayload) => {
           const room = payload.new as Room;
@@ -123,9 +123,10 @@ class RoomTimerManager {
   private handleSecondsUpdated(timer: Timer, roomId: number): void {
     if (!this.io) return;
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(2, '0')}:${String(
-      timeValues.seconds
-    ).padStart(2, '0')}`;
+    const formattedTime = `${String(timeValues.minutes).padStart(
+      2,
+      '0'
+    )}:${String(timeValues.seconds).padStart(2, '0')}`;
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
   }
 
@@ -158,7 +159,9 @@ class RoomTimerManager {
       countdownTimerLobby: timerLobby,
     });
 
-    this.addTimerEventListeners(timerLobby, roomId, () => setDraftPhase(roomId));
+    this.addTimerEventListeners(timerLobby, roomId, () =>
+      setDraftPhase(roomId)
+    );
     this.addTimerEventListeners(timer, roomId, () => finishTurn(roomId, this));
   }
 

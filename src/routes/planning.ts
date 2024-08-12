@@ -1,7 +1,6 @@
-import sleep from '../helpers/sleep';
+import { Router } from 'express';
 import supabase from '../supabase';
 import { setPlanningPhase } from '../utils/handlers/phaseHandler';
-import { Router } from 'express';
 
 const router = Router();
 
@@ -17,7 +16,10 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    await supabase.from('teams').update({ ready: true }).eq('room_id', parsedRoomid);
+    await supabase
+      .from('teams')
+      .update({ ready: true })
+      .eq('room_id', parsedRoomid);
     await supabase.from('rooms').update({ ready: true }).eq('id', parsedRoomid);
 
     await setPlanningPhase(parsedRoomid);

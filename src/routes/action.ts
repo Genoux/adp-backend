@@ -1,6 +1,6 @@
+import { Router } from 'express';
 import RoomTimerManager from '../services/RoomTimerManager';
 import finishTurn from '../utils/actions/finishTurn';
-import { Router } from 'express';
 
 const router = Router();
 
