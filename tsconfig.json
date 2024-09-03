@@ -7,10 +7,11 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./src",
+    "typeRoots": ["./node_modules/@types", "./types"],
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/inspector-gadget.d.ts"],
   "exclude": ["node_modules"]
 }

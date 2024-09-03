@@ -1,7 +1,8 @@
 import supabase from '../supabase';
+import { Database } from '../types/supabase';
 
 export default async function supabaseQuery<T>(
-  table: string,
+  table: keyof Database['public']['Tables'],
   query: (q: any) => any,
   errorMessage: string
 ): Promise<T> {
@@ -14,4 +15,3 @@ export default async function supabaseQuery<T>(
     throw error;
   }
 }
-

@@ -1,6 +1,6 @@
 import cronstrue from 'cronstrue';
 import { subHours } from 'date-fns';
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
 import { Database } from '../types/supabase';

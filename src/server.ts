@@ -13,6 +13,15 @@ import RoomTimerManager from './services/RoomTimerManager';
 export const startServer = () => {
   const app = express();
 
+  app.set('view engine', 'ejs');
+  app.set('views', join(__dirname, 'public/views'));
+
+  app.get('/inspector', (req, res) => {
+    const roomTimerManager = RoomTimerManager.getInstance();
+    const roomStates = roomTimerManager.getInspectorState();
+    res.render('timerInspector', { roomStates });
+  });
+
   // Apply CORS middleware
   app.use(
     cors({
@@ -63,6 +72,21 @@ export const startServer = () => {
     console.log(`Connection established: ${socket.id}`);
     handleRoomEvents(socket);
     handleUserEvents(socket);
+
+    socket.on('timerAction', ({ action, roomId, isLobby }) => {
+      const roomTimerManager = RoomTimerManager.getInstance();
+      switch (action) {
+        case 'reset':
+          isLobby ? roomTimerManager.resetLobbyTimer(roomId) : roomTimerManager.resetTimer(roomId);
+          break;
+        case 'pause':
+          isLobby ? roomTimerManager.getTimer(roomId)?.countdownTimerLobby.pause() : roomTimerManager.getTimer(roomId)?.countdownTimer.pause();
+          break;
+        case 'start':
+          isLobby ? roomTimerManager.startLobbyTimer(roomId) : roomTimerManager.startTimer(roomId);
+          break;
+      }
+    });
   });
 
   const packageJson = JSON.parse(
