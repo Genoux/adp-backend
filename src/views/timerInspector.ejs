@@ -23,16 +23,14 @@
     });
 
     socket.on('timerUpdate', function (data) {
-      console.log(data)
       updateTimers(data.roomStates);
     });
 
     function updateTimers(roomStates) {
       const timersContainer = document.getElementById('timers');
-      timersContainer.innerHTML = ''; // Clear existing timers
+      timersContainer.innerHTML = '';
 
       if (roomStates.length === 0) {
-        // Display empty state
         const emptyState = document.createElement('div');
         emptyState.className = 'col-span-full text-center py-8';
         emptyState.innerHTML = `
