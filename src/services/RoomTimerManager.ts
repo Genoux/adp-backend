@@ -62,7 +62,8 @@ class RoomTimerManager {
         isRunning: state.countdownTimerLobby.isRunning(),
         timeLeft: state.countdownTimerLobby.getTimeValues().toString()
       },
-      isLocked: state.isLocked
+      isLocked: state.isLocked,
+      id: state.id
     }));
   }
 
@@ -98,7 +99,11 @@ class RoomTimerManager {
             console.log(`Initialized timer for new room ${room.id}`);
           } else if (payload.eventType === 'UPDATE') {
             this.handleRoomStatusChange(room);
+          } else if (payload.eventType === 'DELETE') {
+            this.deleteTimer(payload.old.id as number);
+            console.log(`Room ${payload.old.id} deleted`);
           }
+          this.emitTimerUpdate();
         }
       )
       .subscribe((status) => {
@@ -108,6 +113,12 @@ class RoomTimerManager {
           console.error('Error subscribing to room changes:', status);
         }
       });
+  }
+
+  private emitTimerUpdate(): void {
+    if (!this.io) return;
+    const roomStates = this.getInspectorState();
+    this.io.emit('timerUpdate', { roomStates });
   }
 
   private handleRoomStatusChange(room: Room): void {
@@ -158,13 +169,6 @@ class RoomTimerManager {
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
 
     this.emitTimerUpdate();
-  }
-
-
-  private emitTimerUpdate(): void {
-    if (!this.io) return;
-    const roomStates = this.getInspectorState();
-    this.io.emit('timerUpdate', { roomStates });
   }
 
   public updateInspector(): void {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { createServer } from 'http';
+import path from 'path';
 import { join } from 'path';
 import cors from 'cors';
 import express from 'express';
@@ -7,14 +8,14 @@ import { Server, Socket } from 'socket.io';
 import api from './api';
 import handleRoomEvents from './events/roomEvents';
 import handleUserEvents from './events/userEvents';
-import startRoomCleanupService from './helpers/cleanupRoomsCron';
+import { startRoomCleanupService } from './helpers/cleanupRoomsCron';
 import RoomTimerManager from './services/RoomTimerManager';
 
 export const startServer = () => {
+  
   const app = express();
-
   app.set('view engine', 'ejs');
-  app.set('views', join(__dirname, 'public/views'));
+  app.set('views', path.join(__dirname, 'views'));
 
   app.get('/inspector', (req, res) => {
     const roomTimerManager = RoomTimerManager.getInstance();
@@ -64,14 +65,16 @@ export const startServer = () => {
   // Subscribe to new room creations and updates
   roomTimerManager.subscribeToRoomChanges();
 
-  startRoomCleanupService().catch((error: Error) => {
-    console.error('Error starting room cleanup service:', error);
-  });
+  startRoomCleanupService()
 
   io.on('connection', (socket: Socket) => {
     console.log(`Connection established: ${socket.id}`);
     handleRoomEvents(socket);
     handleUserEvents(socket);
+
+    const initialState = roomTimerManager.getInspectorState();
+    socket.emit('timerUpdate', { roomStates: initialState });
+  
 
     socket.on('timerAction', ({ action, roomId, isLobby }) => {
       const roomTimerManager = RoomTimerManager.getInstance();
@@ -86,6 +89,10 @@ export const startServer = () => {
           isLobby ? roomTimerManager.startLobbyTimer(roomId) : roomTimerManager.startTimer(roomId);
           break;
       }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('User disconnected');
     });
   });
 
