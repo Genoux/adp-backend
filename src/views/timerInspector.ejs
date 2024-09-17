@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer Inspector</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body class="bg-gray-100 p-8">
+  <h1 class="text-3xl font-bold mb-6">Timer Inspector</h1>
+  <p class="mb-4 text-lg">Room cleanup runs daily at midnight</p>
+  <div id="timers" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <p>Loading timers...</p>
+  </div>
+  <script>
+    const socket = io();
+
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    socket.on('timerUpdate', function (data) {
+      updateTimers(data.roomStates);
+    });
+
+    function updateTimers(roomStates) {
+      const timersContainer = document.getElementById('timers');
+      timersContainer.innerHTML = '';
+
+      if (roomStates.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'col-span-full text-center py-8';
+        emptyState.innerHTML = `
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">No active timers</h3>
+                    <p class="mt-1 text-sm text-gray-500">There are currently no active room timers.</p>
+                `;
+        timersContainer.appendChild(emptyState);
+      } else {
+        roomStates.forEach(room => {
+          const roomElement = createRoomElement(room);
+          timersContainer.appendChild(roomElement);
+        });
+      }
+    }
+
+    function createRoomElement(timer) {
+      const roomDiv = document.createElement('div');
+      roomDiv.className = 'bg-white p-6 rounded-lg shadow-md';
+      roomDiv.id = `room-${timer.roomId}`;
+      roomDiv.innerHTML = `
+                <div class="flex flex-col justify-between mb-4">
+                  <h2 class="text-xl font-semibold">Timer for ${timer.roomId}</h2>
+                  <pre class="text-xs">${timer.id}</pre>
+                </div>
+                <hr />
+                <div class="mt-4">
+                    <p class="font-medium">Main Timer: <span class="font-bold main-timer">${timer.countdownTimer.timeLeft}</span></p>
+                    <div class="mt-2">
+                        <button onclick="timerAction('reset', ${timer.roomId}, false)" class="bg-blue-500 text-white px-3 py-1 rounded hover:opacity-80">Reset</button>
+                        <button onclick="timerAction('pause', ${timer.roomId}, false)" class="bg-red-500 text-white px-3 py-1 rounded hover:opacity-80">Pause</button>
+                        <button onclick="timerAction('start', ${timer.roomId}, false)" class="bg-green-500 text-white px-3 py-1 rounded hover:opacity-80">Start</button>
+                    </div>
+                </div>
+                <div>
+                    <p class="font-medium">Lobby Timer: <span class="font-bold lobby-timer">${timer.countdownTimerLobby.timeLeft}</span></p>
+                    <div class="mt-2">
+                        <button onclick="timerAction('reset', ${timer.roomId}, true)" class="bg-blue-500 text-white px-3 py-1 rounded hover:opacity-80">Reset</button>
+                        <button onclick="timerAction('pause', ${timer.roomId}, true)" class="bg-red-500 text-white px-3 py-1 rounded hover:opacity-80">Stop</button>
+                        <button onclick="timerAction('start', ${timer.roomId}, true)" class="bg-green-500 text-white px-3 py-1 rounded hover:opacity-80">Start</button>
+                    </div>
+                </div>
+            `;
+      return roomDiv;
+    }
+
+    function timerAction(action, roomId, isLobby) {
+      socket.emit('timerAction', { action, roomId, isLobby });
+    }
+  </script>
+</body>
+
+</html>

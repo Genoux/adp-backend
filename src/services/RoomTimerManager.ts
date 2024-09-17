@@ -10,16 +10,25 @@ import { setDraftPhase } from '../utils/handlers/phaseHandler';
 type RoomPayload = RealtimePostgresChangesPayload<Room>;
 type Room = Database['public']['Tables']['rooms']['Row'];
 
-interface RoomTimer {
+interface RoomState {
   countdownTimer: Timer;
   countdownTimerLobby: Timer;
   targetAchievedTimeout?: NodeJS.Timeout;
+  id: string;
+  isLocked: boolean;
+}
+
+function randomUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = (Math.random() * 16) | 0,
+      v = c == 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 class RoomTimerManager {
   private static instance: RoomTimerManager;
-  private roomTimers: Map<number, RoomTimer> = new Map();
-  private roomLocks: Map<number, boolean> = new Map();
+  private roomStates: Map<number, RoomState> = new Map();
   private io: Server | null = null;
 
   private constructor() {
@@ -35,6 +44,27 @@ class RoomTimerManager {
 
   public setIo(io: Server): void {
     this.io = io;
+  }
+
+  public getInspectorState(): Array<{
+    roomId: number;
+    countdownTimer: { isRunning: boolean; timeLeft: string };
+    countdownTimerLobby: { isRunning: boolean; timeLeft: string };
+    isLocked: boolean;
+  }> {
+    return Array.from(this.roomStates).map(([roomId, state]) => ({
+      roomId,
+      countdownTimer: {
+        isRunning: state.countdownTimer.isRunning(),
+        timeLeft: state.countdownTimer.getTimeValues().toString()
+      },
+      countdownTimerLobby: {
+        isRunning: state.countdownTimerLobby.isRunning(),
+        timeLeft: state.countdownTimerLobby.getTimeValues().toString()
+      },
+      isLocked: state.isLocked,
+      id: state.id
+    }));
   }
 
   public async initializeAllRoomTimers(): Promise<void> {
@@ -69,7 +99,11 @@ class RoomTimerManager {
             console.log(`Initialized timer for new room ${room.id}`);
           } else if (payload.eventType === 'UPDATE') {
             this.handleRoomStatusChange(room);
+          } else if (payload.eventType === 'DELETE') {
+            this.deleteTimer(payload.old.id as number);
+            console.log(`Room ${payload.old.id} deleted`);
           }
+          this.emitTimerUpdate();
         }
       )
       .subscribe((status) => {
@@ -79,6 +113,12 @@ class RoomTimerManager {
           console.error('Error subscribing to room changes:', status);
         }
       });
+  }
+
+  private emitTimerUpdate(): void {
+    if (!this.io) return;
+    const roomStates = this.getInspectorState();
+    this.io.emit('timerUpdate', { roomStates });
   }
 
   private handleRoomStatusChange(room: Room): void {
@@ -98,13 +138,12 @@ class RoomTimerManager {
     }
   }
 
-  public listTimers(): Map<number, RoomTimer> {
-    return new Map(this.roomTimers);
+  public listTimers(): Map<number, RoomState> {
+    return new Map(this.roomStates);
   }
 
   public deleteTimer(roomId: number): void {
-    this.roomTimers.delete(roomId);
-    this.roomLocks.delete(roomId);
+    this.roomStates.delete(roomId);
   }
 
   private addTimerEventListeners(
@@ -128,20 +167,30 @@ class RoomTimerManager {
       '0'
     )}:${String(timeValues.seconds).padStart(2, '0')}`;
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
+
+    this.emitTimerUpdate();
+  }
+
+  public updateInspector(): void {
+    this.emitTimerUpdate();
   }
 
   private async handleTargetAchieved(
     roomId: number,
     onTimerTargetAchieved?: () => Promise<void>
   ): Promise<void> {
-    const roomTimer = this.roomTimers.get(roomId);
-    if (!roomTimer || !onTimerTargetAchieved) return;
+    const roomState = this.roomStates.get(roomId);
+    if (!roomState || !onTimerTargetAchieved) return;
 
-    roomTimer.targetAchievedTimeout = setTimeout(onTimerTargetAchieved, 2000);
+    roomState.targetAchievedTimeout = setTimeout(onTimerTargetAchieved, 2000);
   }
 
   public hasTimer(roomId: number): boolean {
-    return this.roomTimers.has(roomId);
+    return this.roomStates.has(roomId);
+  }
+
+  public getTimer(roomId: number): RoomState | undefined {
+    return this.roomStates.get(roomId);
   }
 
   public initTimer(roomId: number): void {
@@ -154,9 +203,11 @@ class RoomTimerManager {
 
     const timer = new Timer();
     const timerLobby = new Timer();
-    this.roomTimers.set(roomId, {
+    this.roomStates.set(roomId, {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
+      id: randomUUID(),
+      isLocked: false,
     });
 
     this.addTimerEventListeners(timerLobby, roomId, () =>
@@ -166,9 +217,9 @@ class RoomTimerManager {
   }
 
   public startLobbyTimer(roomId: number): void {
-    const roomTimer = this.roomTimers.get(roomId);
-    if (roomTimer) {
-      roomTimer.countdownTimerLobby.start({
+    const roomState = this.roomStates.get(roomId);
+    if (roomState) {
+      roomState.countdownTimerLobby.start({
         countdown: true,
         startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 },
       });
@@ -176,9 +227,9 @@ class RoomTimerManager {
   }
 
   public startTimer(roomId: number): void {
-    const roomTimer = this.roomTimers.get(roomId);
-    if (roomTimer) {
-      roomTimer.countdownTimer.start({
+    const roomState = this.roomStates.get(roomId);
+    if (roomState) {
+      roomState.countdownTimer.start({
         countdown: true,
         startValues: { seconds: Number(process.env.START_TIME) || 30 },
       });
@@ -186,38 +237,50 @@ class RoomTimerManager {
   }
 
   public cancelTargetAchieved(roomId: number): void {
-    const roomTimer = this.roomTimers.get(roomId);
-    if (roomTimer?.targetAchievedTimeout) {
-      clearTimeout(roomTimer.targetAchievedTimeout);
+    const roomState = this.roomStates.get(roomId);
+    if (roomState?.targetAchievedTimeout) {
+      clearTimeout(roomState.targetAchievedTimeout);
     }
   }
 
   public resetTimer(roomId: number): void {
-    this.roomTimers.get(roomId)?.countdownTimer.reset();
+    this.roomStates.get(roomId)?.countdownTimer.reset();
+    this.updateInspector();
   }
 
   public resetLobbyTimer(roomId: number): void {
-    this.roomTimers.get(roomId)?.countdownTimerLobby.reset();
+    this.roomStates.get(roomId)?.countdownTimerLobby.reset();
+    this.updateInspector();
   }
 
   public stopTimer(roomId: number): void {
-    this.roomTimers.get(roomId)?.countdownTimer.stop();
+    this.roomStates.get(roomId)?.countdownTimer.stop();
+    this.updateInspector();
   }
 
   public stopLobbyTimer(roomId: number): void {
-    this.roomTimers.get(roomId)?.countdownTimerLobby.stop();
+    this.roomStates.get(roomId)?.countdownTimerLobby.stop();
+    this.updateInspector();
   }
 
   public lockRoom(roomId: number): void {
-    this.roomLocks.set(roomId, true);
+    const roomState = this.roomStates.get(roomId);
+    if (roomState) {
+      roomState.isLocked = true;
+      this.updateInspector();
+    }
   }
 
   public unlockRoom(roomId: number): void {
-    this.roomLocks.set(roomId, false);
+    const roomState = this.roomStates.get(roomId);
+    if (roomState) {
+      roomState.isLocked = false;
+      this.updateInspector();
+    }
   }
 
   public isLocked(roomId: number): boolean {
-    return this.roomLocks.get(roomId) || false;
+    return this.roomStates.get(roomId)?.isLocked || false;
   }
 }
 

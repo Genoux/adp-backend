@@ -19,6 +19,11 @@ const handleRoomEvents = (socket: Socket) => {
     console.log(`User ${socket.id} joined room ${roomid}`);
     socket.join(JSON.stringify(roomid));
 
+    const roomTimer = roomTimerManager.getTimer(roomid);
+    if(roomTimer) {
+      console.log('Timer ID: ', roomTimer.id);
+    }
+
     try {
       const room = await supabaseQuery<Room>(
         'rooms',
