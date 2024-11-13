@@ -124,7 +124,6 @@ class RoomTimerManager {
   private handleRoomStatusChange(room: Room): void {
     switch (room.status) {
       case 'planning':
-        this.stopTimer(room.id);
         this.startLobbyTimer(room.id);
         break;
       case 'ban':
