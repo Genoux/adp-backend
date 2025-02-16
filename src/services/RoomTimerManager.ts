@@ -6,6 +6,7 @@ import supabase from '../supabase';
 import { Database } from '../types/supabase';
 import finishTurn from '../utils/actions/finishTurn';
 import { setDraftPhase } from '../utils/handlers/phaseHandler';
+import RoomLogger from '../helpers/logger';
 
 type RoomPayload = RealtimePostgresChangesPayload<Room>;
 type Room = Database['public']['Tables']['rooms']['Row'];
@@ -30,9 +31,10 @@ class RoomTimerManager {
   private static instance: RoomTimerManager;
   private roomStates: Map<number, RoomState> = new Map();
   private io: Server | null = null;
+  private logger = RoomLogger.getInstance();
 
   private constructor() {
-    // Private constructor, singleton.
+    this.logger.system('RoomTimerManager instance created');
   }
 
   public static getInstance(): RoomTimerManager {
@@ -43,6 +45,7 @@ class RoomTimerManager {
   }
 
   public setIo(io: Server): void {
+    this.logger.system('Setting Socket.IO instance');
     this.io = io;
   }
 
@@ -51,8 +54,9 @@ class RoomTimerManager {
     countdownTimer: { isRunning: boolean; timeLeft: string };
     countdownTimerLobby: { isRunning: boolean; timeLeft: string };
     isLocked: boolean;
+    id: string;
   }> {
-    return Array.from(this.roomStates).map(([roomId, state]) => ({
+    const states = Array.from(this.roomStates).map(([roomId, state]) => ({
       roomId,
       countdownTimer: {
         isRunning: state.countdownTimer.isRunning(),
@@ -65,24 +69,36 @@ class RoomTimerManager {
       isLocked: state.isLocked,
       id: state.id
     }));
+    
+    return states;
   }
 
   public async initializeAllRoomTimers(): Promise<void> {
+    this.logger.system('Initializing all room timers...');
+    
     const rooms = await supabaseQuery<Room[]>(
       'rooms',
       (q) => q.select('*'),
       'Error fetching all rooms in initializeAllRoomTimers'
     );
 
-    rooms?.forEach(this.initializeRoomTimer.bind(this));
+    if (rooms?.length) {
+      this.logger.system(`Found ${rooms.length} rooms to initialize`);
+      rooms.forEach(this.initializeRoomTimer.bind(this));
+    } else {
+      this.logger.warn(0, 'No rooms found to initialize');
+    }
   }
 
   private initializeRoomTimer(room: Room): void {
     this.initTimer(room.id);
     this.handleRoomStatusChange(room);
+    this.logger.success(room.id, 'Room timer initialized');
   }
 
   public subscribeToRoomChanges(): void {
+    this.logger.system('Setting up Supabase room changes subscription');
+    
     supabase
       .channel('room_changes')
       .on(
@@ -95,33 +111,35 @@ class RoomTimerManager {
         (payload: RoomPayload) => {
           const room = payload.new as Room;
           if (payload.eventType === 'INSERT') {
+            this.logger.info(room.id, 'New room created');
             this.initializeRoomTimer(room);
-            console.log(`Initialized timer for new room ${room.id}`);
           } else if (payload.eventType === 'UPDATE') {
+            this.logger.info(room.id, `Room updated: ${room.status}`);
             this.handleRoomStatusChange(room);
           } else if (payload.eventType === 'DELETE') {
+            this.logger.info(payload.old.id as number, 'Room deleted');
             this.deleteTimer(payload.old.id as number);
-            console.log(`Room ${payload.old.id} deleted`);
           }
           this.emitTimerUpdate();
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to room changes');
-        } else {
-          console.error('Error subscribing to room changes:', status);
-        }
+        this.logger.system(`Supabase subscription status: ${status}`);
       });
   }
 
   private emitTimerUpdate(): void {
-    if (!this.io) return;
+    if (!this.io) {
+      this.logger.warn(0, 'No Socket.IO instance available for timer update');
+      return;
+    }
     const roomStates = this.getInspectorState();
     this.io.emit('timerUpdate', { roomStates });
   }
 
   private handleRoomStatusChange(room: Room): void {
+    this.logger.start(room.id, `Status changing to: ${room.status}`);
+    
     switch (room.status) {
       case 'planning':
         this.startLobbyTimer(room.id);
@@ -137,12 +155,10 @@ class RoomTimerManager {
     }
   }
 
-  public listTimers(): Map<number, RoomState> {
-    return new Map(this.roomStates);
-  }
-
   public deleteTimer(roomId: number): void {
+    this.logger.start(roomId, 'Deleting timer');
     this.roomStates.delete(roomId);
+    this.logger.success(roomId, 'Timer deleted');
   }
 
   private addTimerEventListeners(
@@ -150,27 +166,26 @@ class RoomTimerManager {
     roomId: number,
     onTimerTargetAchieved?: () => Promise<void>
   ): void {
+    
     timer.addEventListener('secondsUpdated', () =>
       this.handleSecondsUpdated(timer, roomId)
     );
+    
     timer.addEventListener('targetAchieved', () =>
       this.handleTargetAchieved(roomId, onTimerTargetAchieved)
     );
   }
 
   private handleSecondsUpdated(timer: Timer, roomId: number): void {
-    if (!this.io) return;
+    if (!this.io) {
+      this.logger.warn(roomId, 'No Socket.IO instance available');
+      return;
+    }
+    
     const timeValues = timer.getTimeValues();
-    const formattedTime = `${String(timeValues.minutes).padStart(
-      2,
-      '0'
-    )}:${String(timeValues.seconds).padStart(2, '0')}`;
+    const formattedTime = `${String(timeValues.minutes).padStart(2,'0')}:${String(timeValues.seconds).padStart(2,'0')}`;
+    
     this.io.to(roomId.toString()).emit('TIMER', formattedTime);
-
-    this.emitTimerUpdate();
-  }
-
-  public updateInspector(): void {
     this.emitTimerUpdate();
   }
 
@@ -178,50 +193,57 @@ class RoomTimerManager {
     roomId: number,
     onTimerTargetAchieved?: () => Promise<void>
   ): Promise<void> {
+    this.logger.info(roomId, 'Timer target achieved');
+    
     const roomState = this.roomStates.get(roomId);
-    if (!roomState || !onTimerTargetAchieved) return;
+    if (!roomState || !onTimerTargetAchieved) {
+      this.logger.warn(roomId, 'No room state or target achieved handler');
+      return;
+    }
 
     roomState.targetAchievedTimeout = setTimeout(onTimerTargetAchieved, 2000);
   }
 
-  public hasTimer(roomId: number): boolean {
-    return this.roomStates.has(roomId);
-  }
-
-  public getTimer(roomId: number): RoomState | undefined {
-    return this.roomStates.get(roomId);
-  }
-
   public initTimer(roomId: number): void {
     if (this.hasTimer(roomId)) {
-      console.log(
-        `Timer for room ${roomId} already exists. Skipping initialization.`
-      );
+      this.logger.warn(roomId, 'Timer already exists, skipping initialization');
       return;
     }
 
+    this.logger.start(roomId, 'Initializing timer');
+    
     const timer = new Timer();
     const timerLobby = new Timer();
-    this.roomStates.set(roomId, {
+    const newState = {
       countdownTimer: timer,
       countdownTimerLobby: timerLobby,
       id: randomUUID(),
       isLocked: false,
-    });
+    };
+    
+    this.roomStates.set(roomId, newState);
+    this.logger.info(roomId, `Timer ID: ${newState.id}`);
 
     this.addTimerEventListeners(timerLobby, roomId, () =>
       setDraftPhase(roomId)
     );
     this.addTimerEventListeners(timer, roomId, () => finishTurn(roomId, this));
+    
+    this.logger.success(roomId, 'Timer initialized');
   }
 
   public startLobbyTimer(roomId: number): void {
+    this.logger.start(roomId, 'Starting lobby timer');
+    
     const roomState = this.roomStates.get(roomId);
     if (roomState) {
       roomState.countdownTimerLobby.start({
         countdown: true,
         startValues: { seconds: Number(process.env.LOBBY_TIME) || 20 },
       });
+      this.logger.success(roomId, 'Lobby timer started');
+    } else {
+      this.logger.error(roomId, 'No room state found');
     }
   }
 
@@ -232,24 +254,33 @@ class RoomTimerManager {
         countdown: true,
         startValues: { seconds: Number(process.env.START_TIME) || 30 },
       });
+    } else {
+      this.logger.error(roomId, 'No room state found');
     }
   }
 
   public cancelTargetAchieved(roomId: number): void {
+    this.logger.start(roomId, 'Canceling target achieved timeout');
+    
     const roomState = this.roomStates.get(roomId);
     if (roomState?.targetAchievedTimeout) {
       clearTimeout(roomState.targetAchievedTimeout);
+      this.logger.success(roomId, 'Target achieved timeout canceled');
+    } else {
+      this.logger.warn(roomId, 'No target achieved timeout found');
     }
   }
 
   public resetTimer(roomId: number): void {
     this.roomStates.get(roomId)?.countdownTimer.reset();
     this.updateInspector();
+    this.logger.success(roomId, 'Game timer reset');
   }
 
   public resetLobbyTimer(roomId: number): void {
     this.roomStates.get(roomId)?.countdownTimerLobby.reset();
     this.updateInspector();
+    this.logger.success(roomId, 'Lobby timer reset');
   }
 
   public stopTimer(roomId: number): void {
@@ -262,24 +293,46 @@ class RoomTimerManager {
     this.updateInspector();
   }
 
+  public hasTimer(roomId: number): boolean {
+    return this.roomStates.has(roomId);
+  }
+
+  public getTimer(roomId: number): RoomState | undefined {
+    return this.roomStates.get(roomId);
+  }
+
   public lockRoom(roomId: number): void {
+    this.logger.start(roomId, 'Locking room');
     const roomState = this.roomStates.get(roomId);
     if (roomState) {
       roomState.isLocked = true;
       this.updateInspector();
+      this.logger.success(roomId, 'Room locked');
+    } else {
+      this.logger.error(roomId, 'No room state found');
     }
   }
 
   public unlockRoom(roomId: number): void {
+    this.logger.start(roomId, 'Unlocking room');
     const roomState = this.roomStates.get(roomId);
     if (roomState) {
       roomState.isLocked = false;
       this.updateInspector();
+      this.logger.success(roomId, 'Room unlocked');
+    } else {
+      this.logger.error(roomId, 'No room state found');
     }
   }
 
   public isLocked(roomId: number): boolean {
-    return this.roomStates.get(roomId)?.isLocked || false;
+    const isLocked = this.roomStates.get(roomId)?.isLocked || false;
+    this.logger.info(roomId, `Lock status: ${isLocked}`);
+    return isLocked;
+  }
+
+  public updateInspector(): void {
+    this.emitTimerUpdate();
   }
 }
 
