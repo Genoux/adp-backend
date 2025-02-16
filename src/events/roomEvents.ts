@@ -3,25 +3,27 @@ import supabaseQuery from '../helpers/supabaseQuery';
 import RoomTimerManager from '../services/RoomTimerManager';
 import { Database } from '../types/supabase';
 import { syncUserTurn } from '../utils/handlers/draftHandler';
+import RoomLogger from '../helpers/logger';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 const handleRoomEvents = (socket: Socket) => {
   const roomTimerManager = RoomTimerManager.getInstance();
+  const logger = RoomLogger.getInstance();
 
   socket.on('joinRoom', async ({ roomid }: { roomid: number | undefined }) => {
     if (roomid === undefined) {
-      console.error('Received undefined roomid in joinRoom event');
+      logger.error(null, 'Received undefined roomid in joinRoom event');
       socket.emit('error', 'Invalid room ID');
       return;
     }
 
-    console.log(`User ${socket.id} joined room ${roomid}`);
+    logger.info(roomid, `User ${socket.id} joined room`);
     socket.join(JSON.stringify(roomid));
 
     const roomTimer = roomTimerManager.getTimer(roomid);
-    if(roomTimer) {
-      console.log('Timer ID: ', roomTimer.id);
+    if (roomTimer) {
+      logger.info(roomid, `Timer ID: ${roomTimer.id}`);
     }
 
     try {
@@ -32,9 +34,7 @@ const handleRoomEvents = (socket: Socket) => {
       );
 
       if (!room) {
-        console.log(
-          `Room ${roomid} does not exist. Deleting timer if it exists.`
-        );
+        logger.warn(roomid, 'Room does not exist. Deleting timer if it exists.');
         roomTimerManager.deleteTimer(roomid);
         socket.emit('error', 'Room not found');
         return;
@@ -42,17 +42,21 @@ const handleRoomEvents = (socket: Socket) => {
 
       socket.emit('message', `Welcome to room ${roomid}`);
 
-      if (!room.ready) return;
+      if (!room.ready) {
+        logger.info(roomid, 'Room not ready, skipping turn sync');
+        return;
+      }
 
       await syncUserTurn(roomid);
+      logger.success(roomid, 'User turn synchronized');
     } catch (error) {
-      console.error('Error in joinRoom event:', error);
+      logger.error(roomid, 'Error in joinRoom event:', error);
       socket.emit('error', 'Server error occurred');
     }
   });
 
   socket.on('disconnect', (reason) => {
-    console.log(`User ${socket.id} disconnected because ${reason}`);
+    logger.system(`User ${socket.id} disconnected because ${reason}`);
   });
 };
 
