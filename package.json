@@ -11,7 +11,10 @@
     "railway": "railway run npm start",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "prettier": "prettier --write \"src/**/*.ts\""
+    "prettier": "prettier --write \"src/**/*.ts\"",
+    "test:custom": "ts-node src/runTests.ts",
+    "test:race": "ts-node src/runTests.ts --race-conditions",
+    "test:sync": "ts-node src/runTests.ts --sync"
   },
   "_moduleAliases": {
     "@": "dist"
