@@ -111,7 +111,21 @@ export const startServer = () => {
   );
 
   app.get('/', (req, res) => {
-    res.json({ version: packageJson.version });
+    res.json({ 
+      version: packageJson.version,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
+  app.get('/health', (req, res) => {
+    res.json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
   });
 
   server.listen(process.env.PORT || 4000, async () => {

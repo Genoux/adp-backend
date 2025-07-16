@@ -5,10 +5,14 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node -r module-alias/register ./dist/index.js",
-    "build": "gulp",
+    "build": "npm run compile",
+    "compile": "tsc && npm run copy-views",
+    "copy-views": "cp -r src/views dist/",
     "dev": "nodemon --watch src -e ts,json --exec ts-node src/index.ts",
     "dev:docker": "docker-compose -f docker-compose.dev.yml up",
     "railway": "railway run npm start",
+    "render:build": "npm run compile",
+    "render:start": "npm start",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "prettier": "prettier --write \"src/**/*.ts\"",
@@ -43,7 +47,8 @@
     "module-alias": "^2.2.3",
     "node-cron": "^3.0.3",
     "pusher": "^5.2.0",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "typescript": "^5.5.4"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "^4.3.1",
