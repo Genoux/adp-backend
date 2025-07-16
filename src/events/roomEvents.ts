@@ -27,17 +27,23 @@ const handleRoomEvents = (socket: Socket) => {
     }
 
     try {
-      const room = await supabaseQuery<Room>(
+      const rooms = await supabaseQuery<Room[]>(
         'rooms',
-        (q) => q.select('*').eq('id', roomid).single(),
+        (q) => q.select('*').eq('id', roomid),
         'Error fetching room data in roomEvents.ts'
       );
 
-      if (!room) {
+      if (!rooms || rooms.length === 0) {
         logger.warn(roomid, 'Room does not exist. Deleting timer if it exists.');
         roomTimerManager.deleteTimer(roomid);
         socket.emit('error', 'Room not found');
         return;
+      }
+
+      // Handle case where multiple rooms exist with same ID (should not happen, but be defensive)
+      const room = rooms[0];
+      if (rooms.length > 1) {
+        logger.warn(roomid, `Found ${rooms.length} rooms with same ID. Using the first one.`);
       }
 
       socket.emit('message', `Welcome to room ${roomid}`);
