@@ -1,10 +1,10 @@
 import supabaseQuery from '../../helpers/supabaseQuery';
+import { executeTurnUpdateTransaction, TurnUpdateTransaction } from '../../helpers/transactionWrapper';
 import RoomTimerManager from '../../services/RoomTimerManager';
 import { Database } from '../../types/supabase';
 import { setDonePhase } from '../../utils/handlers/phaseHandler';
 
 type Room = Database['public']['Tables']['rooms']['Row'];
-type Team = Database['public']['Tables']['teams']['Row'];
 
 export const turnSequence = [
   { phase: 'ban', teamColor: 'blue', cycle: 1 },
@@ -58,39 +58,44 @@ export async function updateTurn(room: Room) {
       await setDonePhase(room.id);
       return;
     }
+    
     const turn = turnSequence.find((turn) => {
       return turn.cycle === room.cycle + 1;
     });
 
-    if (turn) {
-      await supabaseQuery<Room[]>(
-        'rooms',
-        (q) =>
-          q.update({ status: turn.phase, cycle: turn.cycle }).eq('id', room.id),
-        'Error fetching rooms data in draftHandler.ts'
-      );
-
-      const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
-      await supabaseQuery<Team[]>(
-        'teams',
-        (q) =>
-          q
-            .update({ is_turn: true, can_select: true })
-            .eq('room_id', room.id)
-            .eq('color', turn.teamColor),
-        'Error updating turn for active team in updateTurnAndRestartTimer.ts'
-      );
-      await supabaseQuery<Team[]>(
-        'teams',
-        (q) =>
-          q
-            .update({ is_turn: false })
-            .eq('room_id', room.id)
-            .eq('color', otherColor),
-        'Error updating turn for inactive team in updateTurnAndRestartTimer.ts'
-      );
+    if (!turn) {
+      console.error(`No turn found for cycle ${room.cycle + 1}`);
+      return;
     }
+
+    const otherColor = turn.teamColor === 'blue' ? 'red' : 'blue';
+    
+    // Create transaction object
+    const transaction: TurnUpdateTransaction = {
+      roomUpdate: {
+        id: room.id,
+        status: turn.phase,
+        cycle: turn.cycle
+      },
+      activeTeamUpdate: {
+        roomId: room.id,
+        color: turn.teamColor,
+        is_turn: true,
+        can_select: true
+      },
+      inactiveTeamUpdate: {
+        roomId: room.id,
+        color: otherColor,
+        is_turn: false
+      }
+    };
+
+    // Execute transaction
+    await executeTurnUpdateTransaction(transaction);
+    console.log(`Turn updated successfully for room ${room.id}, cycle ${turn.cycle}`);
+    
   } catch (error) {
     console.error('Error in updateTurn:', error);
+    throw error; // Re-throw to let caller handle the error
   }
 }
