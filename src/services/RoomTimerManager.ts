@@ -301,13 +301,32 @@ class RoomTimerManager {
     return this.roomStates.get(roomId);
   }
 
+  public tryLockRoom(roomId: number): boolean {
+    this.logger.start(roomId, 'Attempting to lock room');
+    const roomState = this.roomStates.get(roomId);
+    if (!roomState) {
+      this.logger.error(roomId, 'No room state found');
+      return false;
+    }
+    
+    if (roomState.isLocked) {
+      this.logger.warn(roomId, 'Room is already locked');
+      return false;
+    }
+    
+    roomState.isLocked = true;
+    this.updateInspector();
+    this.logger.success(roomId, 'Room locked successfully');
+    return true;
+  }
+
   public lockRoom(roomId: number): void {
-    this.logger.start(roomId, 'Locking room');
+    this.logger.start(roomId, 'Force locking room');
     const roomState = this.roomStates.get(roomId);
     if (roomState) {
       roomState.isLocked = true;
       this.updateInspector();
-      this.logger.success(roomId, 'Room locked');
+      this.logger.success(roomId, 'Room force locked');
     } else {
       this.logger.error(roomId, 'No room state found');
     }
