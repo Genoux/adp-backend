@@ -73,16 +73,20 @@ const updateHeroLists = (
   };
 };
 
-export const selectChampion = async (room: Room, team: Team): Promise<void> => {
+export const selectChampion = async (room: Room, team: Team): Promise<boolean> => {
   try {
     const result = updateHeroLists(room, team);
-    if (result) {
-      const { updatedRoom, updatedTeam } = result;
-      await updateDatabase(updatedRoom, updatedTeam);
-    } else {
-      console.log('No hero updated');
+    if (!result) {
+      console.log('No hero updated - operation may have already been processed');
+      return false; // Idempotent - safe to call multiple times
     }
+    
+    const { updatedRoom, updatedTeam } = result;
+    await updateDatabase(updatedRoom, updatedTeam);
+    console.log(`Champion selected successfully for room ${room.id}, team ${team.id}`);
+    return true;
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in selectChampion:', error);
+    return false;
   }
 };
