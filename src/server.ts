@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import path from 'path';
 import { join } from 'path';
 import cors from 'cors';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
 import api from './api';
 import handleRoomEvents from './events/roomEvents';
@@ -18,9 +18,9 @@ export const startServer = () => {
 
   const app = express();
   app.set('view engine', 'ejs');
-  app.set('views', path.join(__dirname, 'views'));
+  app.set('views', path.join(process.cwd(), 'dist', 'views'));
 
-  app.get('/inspector', (req, res) => {
+  app.get('/inspector', (req: Request, res: Response) => {
     const roomTimerManager = RoomTimerManager.getInstance();
     const roomStates = roomTimerManager.getInspectorState();
     logger.system('Inspector endpoint accessed');
@@ -111,7 +111,21 @@ export const startServer = () => {
   );
 
   app.get('/', (req, res) => {
-    res.json({ version: packageJson.version });
+    res.json({ 
+      version: packageJson.version,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
+  app.get('/health', (req, res) => {
+    res.json({ 
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
   });
 
   server.listen(process.env.PORT || 4000, async () => {

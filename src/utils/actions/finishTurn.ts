@@ -15,22 +15,25 @@ const finishTurn = async (
   roomID: number,
   roomTimerManager: RoomTimerManager
 ) => {
-  await supabaseQuery<Team[]>(
-    'teams',
-    (q) => q.update({ can_select: false }).eq('room_id', roomID),
-    'Error updating can_select in endActionTrigger.ts'
-  );
-
+  // Cancel any pending timeout first
   roomTimerManager.cancelTargetAchieved(roomID);
-  if (roomTimerManager.isLocked(roomID)) {
-    console.log('Room is locked');
+  
+  // Try to atomically lock the room - if it fails, another operation is in progress
+  if (!roomTimerManager.tryLockRoom(roomID)) {
+    console.log('Room is locked or being processed, skipping turn finish');
     return;
   }
 
-  roomTimerManager.lockRoom(roomID);
-  roomTimerManager.stopTimer(roomID);
-
   try {
+    // Disable selection for all teams in this room
+    await supabaseQuery<Team[]>(
+      'teams',
+      (q) => q.update({ can_select: false }).eq('room_id', roomID),
+      'Error updating can_select in endActionTrigger.ts'
+    );
+
+    roomTimerManager.stopTimer(roomID);
+
     const data = {
       room: await getRoomData(roomID),
       team: await getTeamData(roomID),
@@ -41,12 +44,16 @@ const finishTurn = async (
       return;
     }
 
-    await selectChampion(data.room, data.team);
-    await updateTurn(data.room);
+    const championSelected = await selectChampion(data.room, data.team);
+    if (championSelected) {
+      await updateTurn(data.room);
+    }
 
-    roomTimerManager.unlockRoom(roomID);
   } catch (error) {
     console.error('Error in EndActionTrigger:', (error as Error).message);
+  } finally {
+    // Always unlock the room, even if there was an error
+    roomTimerManager.unlockRoom(roomID);
   }
 };
 

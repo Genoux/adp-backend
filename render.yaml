@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: adp-backend
+    env: node
+    buildCommand: npm run render:build
+    startCommand: npm run render:start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOBBY_TIME
+        value: "10"
+      - key: START_TIME
+        value: "30"
+      - key: PORT
+        value: "4000"
+    # Environment variables to be set in Render dashboard:
+    # - SUPABASE_URL
+    # - SUPABASE_ANON_KEY  
+    # - FRONTEND_URL

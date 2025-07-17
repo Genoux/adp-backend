@@ -1,5 +1,6 @@
 import sleep from '../../helpers/sleep';
 import supabaseQuery from '../../helpers/supabaseQuery';
+import { executePhaseUpdateTransaction } from '../../helpers/transactionWrapper';
 import RoomTimerManager from '../../services/RoomTimerManager';
 import supabase from '../../supabase';
 import { Database } from '../../types/supabase';
@@ -8,33 +9,24 @@ type Team = Database['public']['Tables']['teams']['Row'];
 type Room = Database['public']['Tables']['rooms']['Row'];
 
 export const setWaitingPhase = async (roomId: number) => {
-  await supabaseQuery<Room[]>(
-    'rooms',
-    (q) => q.update({ status: 'waiting', ready: false }).eq('id', roomId),
-    'Error fetching rooms data in phaseHandler.ts'
-  );
-
-  await supabaseQuery<Team[]>(
-    'teams',
-    (q) => q.update({ can_select: false }).eq('room_id', roomId),
-    'Error fetching teams data in phaseHandler.ts'
-  );
+  try {
+    await executePhaseUpdateTransaction(roomId, 'waiting', false);
+    console.log(`Room ${roomId} set to waiting phase`);
+  } catch (error) {
+    console.error('Error setting waiting phase:', error);
+    throw error;
+  }
 };
 
 export const setPlanningPhase = async (roomId: number) => {
-  RoomTimerManager.getInstance().stopTimer(roomId);
-
-  await supabaseQuery<Room[]>(
-    'rooms',
-    (q) => q.update({ status: 'planning', ready: true }).eq('id', roomId),
-    'Error fetching rooms data in phaseHandler.ts'
-  );
-
-  await supabaseQuery<Team[]>(
-    'teams',
-    (q) => q.update({ can_select: false }).eq('room_id', roomId),
-    'Error fetching teams data in phaseHandler.ts'
-  );
+  try {
+    RoomTimerManager.getInstance().stopTimer(roomId);
+    await executePhaseUpdateTransaction(roomId, 'planning', true);
+    console.log(`Room ${roomId} set to planning phase`);
+  } catch (error) {
+    console.error('Error setting planning phase:', error);
+    throw error;
+  }
 };
 
 export async function setDraftPhase(roomId: number): Promise<void> {
