@@ -9,6 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
     "rootDir": "./src",
+    "types": ["node"],
     "typeRoots": ["./node_modules/@types"],
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
@@ -17,7 +18,7 @@
     "strictFunctionTypes": true,
     "noImplicitReturns": false,
     "noImplicitThis": true,
-    "lib": ["ES2022"]
+    "lib": ["ES2022", "DOM"]
   },
   "include": [
     "./src/**/*.ts"
