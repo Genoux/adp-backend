@@ -10,10 +10,7 @@
     "dev": "nodemon --watch src -e ts,json --exec ts-node src/index.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "prettier": "prettier --write \"src/**/*.ts\"",
-    "test:custom": "ts-node src/runTests.ts",
-    "test:race": "ts-node src/runTests.ts --race-conditions",
-    "test:sync": "ts-node src/runTests.ts --sync"
+    "prettier": "prettier --write \"src/**/*.ts\""
   },
   "_moduleAliases": {
     "@": "dist"
@@ -55,7 +52,6 @@
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/module-alias": "^2.0.4",
-    "@types/node": "^22.5.2",
     "@types/node-cron": "^3.0.11",
     "@typescript-eslint/eslint-plugin": "^8.4.0",
     "@typescript-eslint/parser": "^8.4.0",
