@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import path from 'path';
 import { join } from 'path';
 import cors from 'cors';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
 import api from './api';
 import handleRoomEvents from './events/roomEvents';
@@ -18,9 +18,9 @@ export const startServer = () => {
 
   const app = express();
   app.set('view engine', 'ejs');
-  app.set('views', path.join(__dirname, 'views'));
+  app.set('views', path.join(process.cwd(), 'dist', 'views'));
 
-  app.get('/inspector', (req, res) => {
+  app.get('/inspector', (req: Request, res: Response) => {
     const roomTimerManager = RoomTimerManager.getInstance();
     const roomStates = roomTimerManager.getInspectorState();
     logger.system('Inspector endpoint accessed');
